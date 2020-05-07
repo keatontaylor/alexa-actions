@@ -29,6 +29,29 @@ class HomeAssistant():
     def _fetch_token(self, handler_input):
         return ask_utils.get_account_linking_access_token(handler_input)
         
+    def get_health_check(self):
+        """Check connection to HA."""
+        
+        http = urllib3.PoolManager(
+            cert_reqs='CERT_REQUIRED' if VERIFY_SSL else 'CERT_NONE',
+            timeout=urllib3.Timeout(connect=2.0, read=10.0)
+        )
+        
+        response = http.request(
+            'GET', 
+            '{}/api/config'.format(HOME_ASSISTANT_URL),
+            headers={
+                'Authorization': 'Bearer {}'.format(self.token),
+                'Content-Type': 'application/json',
+            },
+        )
+        
+        if response.status >= 400:
+            print(response.data)
+            return "Could not communicate with home assistant"
+        
+        return "Communication with home assistant successful"
+        
     def get_ha_state(self):
         """Get State from HA."""
         
@@ -154,8 +177,10 @@ class HelpIntentHandler(AbstractRequestHandler):
 
     def handle(self, handler_input):
         # type: (HandlerInput) -> Response
-        print("HelpIntentHandler")
-        speak_output = "You can say hello to me! How can I help?"
+        
+        global home_assistant_object
+        home_assistant_object = HomeAssistant(handler_input)
+        speak_output = home_assistant_object.get_health_check()
 
         return (
             handler_input.response_builder
