@@ -14,7 +14,6 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 # UPDATE THESE VARIABLES WITH YOUR CONFIG
-ACTIONABLE_NOTIFICATION_ENTITY_ID = "input_text.alexa_trigger"        # REPLACE WITH THE ENTITY ID YOU CREATED FROM THE README
 HOME_ASSISTANT_URL                = "https://yourhainstall.com"       # REPLACE WITH THE URL FOR YOUR HA FRONTEND
 VERIFY_SSL                        = True                              # SET TO FALSE IF YOU DO NOT HAVE VALID CERTS
 
@@ -29,30 +28,7 @@ class HomeAssistant():
     
     def _fetch_token(self, handler_input):
         return ask_utils.get_account_linking_access_token(handler_input)
-    
-    def get_ha_healthcheck(self):
-        """Check for connectivity to HA."""
         
-        http = urllib3.PoolManager(
-            cert_reqs='CERT_REQUIRED' if VERIFY_SSL else 'CERT_NONE',
-            timeout=urllib3.Timeout(connect=2.0, read=10.0)
-        )
-        
-        response = http.request(
-            'GET', 
-            '{}/api/config'.format(HOME_ASSISTANT_URL),
-            headers={
-                'Authorization': 'Bearer {}'.format(self.token),
-                'Content-Type': 'application/json',
-            },
-        )
-        
-        if response.status >= 400:
-            print(response.data)
-            return "Could not communicate with home assistant"
-        
-        return "Success! I can reach your home assistant installation."
-
     def get_ha_state(self):
         """Get State from HA."""
         
@@ -63,7 +39,7 @@ class HomeAssistant():
         
         response = http.request(
             'GET', 
-            '{}/api/states/{}'.format(HOME_ASSISTANT_URL, ACTIONABLE_NOTIFICATION_ENTITY_ID),
+            '{}/api/states/{}'.format(HOME_ASSISTANT_URL, "input_text.alexa_actionable_notification"),
             headers={
                 'Authorization': 'Bearer {}'.format(self.token),
                 'Content-Type': 'application/json',
@@ -134,6 +110,7 @@ class YesIntentHanlder(AbstractRequestHandler):
 
     def handle(self, handler_input):
         # type: (HandlerInput) -> Response
+        
         global home_assistant_object
         if home_assistant_object == None:
             home_assistant_object = HomeAssistant(handler_input)
@@ -157,31 +134,10 @@ class NoIntentHanlder(AbstractRequestHandler):
 
     def handle(self, handler_input):
         # type: (HandlerInput) -> Response
-        global home_assistant_object
-        if home_assistant_object == None:
-            home_assistant_object = HomeAssistant(handler_input)
-            home_assistant_object.get_ha_state()
+        print("NoIntentHanlder")
         
-        speak_output = home_assistant_object.post_ha_event(True)
-        return (
-            handler_input.response_builder
-                .speak(speak_output)
-                # .ask("add a reprompt if you want to keep the session open for the user to respond")
-                .response
-        )
-
-class HelloWorldIntentHandler(AbstractRequestHandler):
-    """Handler for Hello World Intent."""
-    def can_handle(self, handler_input):
-        # type: (HandlerInput) -> bool
-        return ask_utils.is_intent_name("HelloWorldIntent")(handler_input)
-
-    def handle(self, handler_input):
-        # type: (HandlerInput) -> Response
-        global home_assistant_object
-        home_assistant_object = HomeAssistant(handler_input)
-        speak_output = home_assistant_object.get_ha_healthcheck()
-
+        trigger_from_intent(False, ask_utils.get_account_linking_access_token(handler_input))
+        speak_output = "Okay"
         return (
             handler_input.response_builder
                 .speak(speak_output)
@@ -199,7 +155,7 @@ class HelpIntentHandler(AbstractRequestHandler):
     def handle(self, handler_input):
         # type: (HandlerInput) -> Response
         print("HelpIntentHandler")
-        speak_output = "Please go to the README on github for alexa actions."
+        speak_output = "You can say hello to me! How can I help?"
 
         return (
             handler_input.response_builder
@@ -297,7 +253,6 @@ class CatchAllExceptionHandler(AbstractExceptionHandler):
 sb = SkillBuilder()
 
 sb.add_request_handler(LaunchRequestHandler())
-sb.add_request_handler(HelloWorldIntentHandler())
 sb.add_request_handler(YesIntentHanlder())
 sb.add_request_handler(NoIntentHanlder())
 sb.add_request_handler(HelpIntentHandler())
