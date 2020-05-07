@@ -29,7 +29,30 @@ class HomeAssistant():
     
     def _fetch_token(self, handler_input):
         return ask_utils.get_account_linking_access_token(handler_input)
+    
+    def get_ha_healthcheck(self):
+        """Check for connectivity to HA."""
         
+        http = urllib3.PoolManager(
+            cert_reqs='CERT_REQUIRED' if VERIFY_SSL else 'CERT_NONE',
+            timeout=urllib3.Timeout(connect=2.0, read=10.0)
+        )
+        
+        response = http.request(
+            'GET', 
+            '{}/api/config'.format(HOME_ASSISTANT_URL),
+            headers={
+                'Authorization': 'Bearer {}'.format(self.token),
+                'Content-Type': 'application/json',
+            },
+        )
+        
+        if response.status >= 400:
+            print(response.data)
+            return "Could not communicate with home assistant"
+        
+        return "Success! I can reach your home assistant installation."
+
     def get_ha_state(self):
         """Get State from HA."""
         
@@ -147,6 +170,25 @@ class NoIntentHanlder(AbstractRequestHandler):
                 .response
         )
 
+class HelloWorldIntentHandler(AbstractRequestHandler):
+    """Handler for Hello World Intent."""
+    def can_handle(self, handler_input):
+        # type: (HandlerInput) -> bool
+        return ask_utils.is_intent_name("HelloWorldIntent")(handler_input)
+
+    def handle(self, handler_input):
+        # type: (HandlerInput) -> Response
+        global home_assistant_object
+        home_assistant_object = HomeAssistant(handler_input)
+        speak_output = home_assistant_object.get_ha_healthcheck()
+
+        return (
+            handler_input.response_builder
+                .speak(speak_output)
+                # .ask("add a reprompt if you want to keep the session open for the user to respond")
+                .response
+        )
+
 class HelpIntentHandler(AbstractRequestHandler):
     """Handler for Help Intent."""
     
@@ -255,6 +297,7 @@ class CatchAllExceptionHandler(AbstractExceptionHandler):
 sb = SkillBuilder()
 
 sb.add_request_handler(LaunchRequestHandler())
+sb.add_request_handler(HelloWorldIntentHandler())
 sb.add_request_handler(YesIntentHanlder())
 sb.add_request_handler(NoIntentHanlder())
 sb.add_request_handler(HelpIntentHandler())
