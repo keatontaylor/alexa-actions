@@ -1,3 +1,5 @@
+## VERSION 0.1
+
 import logging
 import urllib3
 import json
