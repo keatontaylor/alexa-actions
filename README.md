@@ -11,3 +11,8 @@ To get started, head over to the [Alexa Actions Wiki](https://github.com/keatont
 ### Thanks and Acknowledgement
 
 Thanks to [@alandtse](https://github.com/alandtse) for his continued worked on the Alexa Media Player custom component.
+
+
+### Support
+
+If you've found this useful and want to support my sleepless nights [Buy me some coffee](https://www.buymeacoffee.com/ogFeLZl)
