@@ -90,7 +90,7 @@ class HomeAssistant():
         
         response = http.request(
             'POST', 
-            '{}/api/events/alexa_actionable_notificaiton'.format(HOME_ASSISTANT_URL),
+            '{}/api/events/alexa_actionable_notification'.format(HOME_ASSISTANT_URL),
             headers={
                 'Authorization': 'Bearer {}'.format(self.token),
                 'Content-Type': 'application/json',
