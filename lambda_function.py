@@ -163,7 +163,8 @@ class NoIntentHanlder(AbstractRequestHandler):
             home_assistant_object.get_ha_state()
             
         
-        speak_output = home_assistant_object.post_ha_event(True)        return (
+        speak_output = home_assistant_object.post_ha_event(False)        
+        return (
             handler_input.response_builder
                 .speak(speak_output)
                 # .ask("add a reprompt if you want to keep the session open for the user to respond")
