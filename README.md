@@ -1,4 +1,4 @@
-# Alexa Actions: Actionable notificaitons from home assistant to Alexa
+# Alexa Actions: Actionable notifications from home assistant to Alexa
 
 ---
 
