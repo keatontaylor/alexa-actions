@@ -157,11 +157,13 @@ class NoIntentHanlder(AbstractRequestHandler):
 
     def handle(self, handler_input):
         # type: (HandlerInput) -> Response
-        print("NoIntentHanlder")
+        global home_assistant_object
+        if home_assistant_object == None:
+            home_assistant_object = HomeAssistant(handler_input)
+            home_assistant_object.get_ha_state()
+            
         
-        trigger_from_intent(False, ask_utils.get_account_linking_access_token(handler_input))
-        speak_output = "Okay"
-        return (
+        speak_output = home_assistant_object.post_ha_event(True)        return (
             handler_input.response_builder
                 .speak(speak_output)
                 # .ask("add a reprompt if you want to keep the session open for the user to respond")
