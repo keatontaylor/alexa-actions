@@ -1,4 +1,4 @@
-## VERSION 0.3
+## VERSION 0.4
 
 import logging
 import urllib3
@@ -174,6 +174,32 @@ class NoIntentHanlder(AbstractRequestHandler):
                 .response
         )
 
+class SelectIntentHandler(AbstractRequestHandler):
+    """Handler for Select Intent."""
+    def can_handle(self, handler_input):
+        # type: (HandlerInput) -> bool
+        return ask_utils.is_intent_name("Select")(handler_input)
+
+    def handle(self, handler_input):
+        # type: (HandlerInput) -> Response
+        selection  = ask_utils.get_slot_value(
+            handler_input=handler_input, slot_name="Selections")
+
+        global home_assistant_object
+        if home_assistant_object == None:
+            home_assistant_object = HomeAssistant(handler_input)
+            home_assistant_object.get_ha_state()
+            
+
+        home_assistant_object.post_ha_event(selection)
+        speak_output = "You selected " + selection
+        return (
+            handler_input.response_builder
+                .speak(speak_output)
+                # .ask("add a reprompt if you want to keep the session open for the user to respond")
+                .response
+        )
+
 class HelpIntentHandler(AbstractRequestHandler):
     """Handler for Help Intent."""
     
@@ -292,6 +318,7 @@ sb.add_request_handler(LaunchRequestHandler())
 sb.add_request_handler(YesIntentHanlder())
 sb.add_request_handler(NoIntentHanlder())
 sb.add_request_handler(HelpIntentHandler())
+sb.add_request_handler(SelectIntentHandler())
 sb.add_request_handler(CancelOrStopIntentHandler())
 sb.add_request_handler(SessionEndedRequestHandler())
 sb.add_request_handler(IntentReflectorHandler()) # make sure IntentReflectorHandler is last so it doesn't override your custom intent handlers
