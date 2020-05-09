@@ -1,4 +1,4 @@
-## VERSION 0.1
+## VERSION 0.2
 
 import logging
 import urllib3
@@ -18,6 +18,7 @@ logger.setLevel(logging.INFO)
 # UPDATE THESE VARIABLES WITH YOUR CONFIG
 HOME_ASSISTANT_URL                = "https://yourhainstall.com"       # REPLACE WITH THE URL FOR YOUR HA FRONTEND
 VERIFY_SSL                        = True                              # SET TO FALSE IF YOU DO NOT HAVE VALID CERTS
+TOKEN                             = ""                                # ADD YOUR LONG LIVED TOKEN IF NEEDED OTHERWISE LEAVE BLANK
 
 home_assistant_object = None
 class HomeAssistant():
@@ -26,7 +27,8 @@ class HomeAssistant():
         self.event_id = ""
         self.text = ""
         self.handler_input = handler_input
-        self.token = self._fetch_token(handler_input)
+        
+        self.token = self._fetch_token(handler_input) if TOKEN == "" else TOKEN
     
     def _fetch_token(self, handler_input):
         return ask_utils.get_account_linking_access_token(handler_input)
@@ -82,7 +84,7 @@ class HomeAssistant():
         
         return self.text
         
-    def post_ha_event(self, response: bool):
+    def post_ha_event(self, response: str):
         """Send event to HA."""
         
         http = urllib3.PoolManager(
@@ -140,9 +142,8 @@ class YesIntentHanlder(AbstractRequestHandler):
         if home_assistant_object == None:
             home_assistant_object = HomeAssistant(handler_input)
             home_assistant_object.get_ha_state()
-            
         
-        speak_output = home_assistant_object.post_ha_event(True)
+        speak_output = home_assistant_object.post_ha_event("ResponseYes")
         return (
             handler_input.response_builder
                 .speak(speak_output)
@@ -159,13 +160,13 @@ class NoIntentHanlder(AbstractRequestHandler):
 
     def handle(self, handler_input):
         # type: (HandlerInput) -> Response
+        
         global home_assistant_object
         if home_assistant_object == None:
             home_assistant_object = HomeAssistant(handler_input)
             home_assistant_object.get_ha_state()
-            
         
-        speak_output = home_assistant_object.post_ha_event(False)        
+        speak_output = home_assistant_object.post_ha_event("ResponseNo")        
         return (
             handler_input.response_builder
                 .speak(speak_output)
@@ -223,8 +224,13 @@ class SessionEndedRequestHandler(AbstractRequestHandler):
     def handle(self, handler_input):
         # type: (HandlerInput) -> Response
 
-        print("SessionEndedRequestHandler")
-        # Any cleanup logic goes here.
+         global home_assistant_object
+        if home_assistant_object == None:
+            home_assistant_object = HomeAssistant(handler_input)
+            home_assistant_object.get_ha_state()
+
+        speak_output = home_assistant_object.post_ha_event("ResponseNone")
+
         return handler_input.response_builder.response
 
 
