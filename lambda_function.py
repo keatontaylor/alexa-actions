@@ -224,7 +224,7 @@ class SessionEndedRequestHandler(AbstractRequestHandler):
     def handle(self, handler_input):
         # type: (HandlerInput) -> Response
 
-         global home_assistant_object
+        global home_assistant_object
         if home_assistant_object == None:
             home_assistant_object = HomeAssistant(handler_input)
             home_assistant_object.get_ha_state()
