@@ -78,7 +78,8 @@ class HomeAssistant():
             return "Could not communicate with home assistant"
             
         decoded_response = json.loads(response.data.decode('utf-8'))['state']
-        
+        decoded_response = decoded_response.replace("'",'"')
+
         self.event_id =  json.loads(decoded_response)['event']
         self.text = json.loads(decoded_response)['text']
         
