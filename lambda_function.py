@@ -16,8 +16,8 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 # UPDATE THESE VARIABLES WITH YOUR CONFIG
-HOME_ASSISTANT_URL                = "https://yourhainstall.com"       # REPLACE WITH THE URL FOR YOUR HA FRONTEND
-VERIFY_SSL                        = True                              # SET TO FALSE IF YOU DO NOT HAVE VALID CERTS
+HOME_ASSISTANT_URL                = "https://waesqq0rw2rzmaummr8xbc39jmavoce4.ui.nabu.casa"       # REPLACE WITH THE URL FOR YOUR HA FRONTEND
+VERIFY_SSL                        = False                              # SET TO FALSE IF YOU DO NOT HAVE VALID CERTS
 TOKEN                             = ""                                # ADD YOUR LONG LIVED TOKEN IF NEEDED OTHERWISE LEAVE BLANK
 
 home_assistant_object = None
@@ -29,7 +29,12 @@ class HomeAssistant():
         self.handler_input = handler_input
         
         self.token = self._fetch_token(handler_input) if TOKEN == "" else TOKEN
-    
+        
+        # added for variable responses from Alexa
+        self.response_text_yes = ""
+        self.response_text_no = ""
+        self.response_text = ""
+
     def _fetch_token(self, handler_input):
         return ask_utils.get_account_linking_access_token(handler_input)
         
@@ -81,6 +86,9 @@ class HomeAssistant():
         
         self.event_id =  json.loads(decoded_response)['event']
         self.text = json.loads(decoded_response)['text']
+        # added for variable responses from Alexa
+        self.response_text_yes = json.loads(decoded_response)['response_yes']
+        self.response_text_no = json.loads(decoded_response)['response_no']
         
         return self.text
         
@@ -91,7 +99,12 @@ class HomeAssistant():
             cert_reqs='CERT_REQUIRED' if VERIFY_SSL else 'CERT_NONE',
             timeout=urllib3.Timeout(connect=2.0, read=10.0)
         )
-        
+        # added for variable responses from Alexa
+        if response == 'ResponseYes':
+            self.response_text = self.response_text_yes
+        elif response == 'ResponseNo':
+            self.response_text = self.response_text_no
+            
         response = http.request(
             'POST', 
             '{}/api/events/alexa_actionable_notification'.format(HOME_ASSISTANT_URL),
@@ -102,10 +115,11 @@ class HomeAssistant():
             body=json.dumps({"event_id": self.event_id, "event_response": response, "text": self.text}).encode('utf-8')
         )
         
+
         if response.status >= 400:
             return "Could not communicate with home assistant"
-        
-        return "Okay"
+        # changed  for variable responses from Alexa
+        return self.response_text
 
 
 class LaunchRequestHandler(AbstractRequestHandler):
@@ -129,7 +143,7 @@ class LaunchRequestHandler(AbstractRequestHandler):
         )
 
 
-class YesIntentHanlder(AbstractRequestHandler):
+class YesIntentHandler(AbstractRequestHandler):
     """Handler for Yes Intent."""
     def can_handle(self, handler_input):
         # type: (HandlerInput) -> bool
@@ -152,7 +166,7 @@ class YesIntentHanlder(AbstractRequestHandler):
         )
 
 
-class NoIntentHanlder(AbstractRequestHandler):
+class NoIntentHandler(AbstractRequestHandler):
     """Handler for No Intent."""
     def can_handle(self, handler_input):
         # type: (HandlerInput) -> bool
@@ -166,7 +180,7 @@ class NoIntentHanlder(AbstractRequestHandler):
             home_assistant_object = HomeAssistant(handler_input)
             home_assistant_object.get_ha_state()
         
-        speak_output = home_assistant_object.post_ha_event("ResponseNo")        
+        speak_output = home_assistant_object.post_ha_event("ResponseNo")
         return (
             handler_input.response_builder
                 .speak(speak_output)
@@ -315,8 +329,8 @@ class CatchAllExceptionHandler(AbstractExceptionHandler):
 sb = SkillBuilder()
 
 sb.add_request_handler(LaunchRequestHandler())
-sb.add_request_handler(YesIntentHanlder())
-sb.add_request_handler(NoIntentHanlder())
+sb.add_request_handler(YesIntentHandler())
+sb.add_request_handler(NoIntentHandler())
 sb.add_request_handler(HelpIntentHandler())
 sb.add_request_handler(SelectIntentHandler())
 sb.add_request_handler(CancelOrStopIntentHandler())
