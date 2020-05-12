@@ -16,8 +16,8 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 # UPDATE THESE VARIABLES WITH YOUR CONFIG
-HOME_ASSISTANT_URL                = "https://waesqq0rw2rzmaummr8xbc39jmavoce4.ui.nabu.casa"       # REPLACE WITH THE URL FOR YOUR HA FRONTEND
-VERIFY_SSL                        = False                              # SET TO FALSE IF YOU DO NOT HAVE VALID CERTS
+HOME_ASSISTANT_URL                = "https://yourhainstall"       # REPLACE WITH THE URL FOR YOUR HA FRONTEND
+VERIFY_SSL                        = True                              # SET TO FALSE IF YOU DO NOT HAVE VALID CERTS
 TOKEN                             = ""                                # ADD YOUR LONG LIVED TOKEN IF NEEDED OTHERWISE LEAVE BLANK
 
 home_assistant_object = None
