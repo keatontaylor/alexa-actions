@@ -102,12 +102,12 @@ class HomeAssistant():
         
         http = urllib3.PoolManager(
             cert_reqs='CERT_REQUIRED' if VERIFY_SSL else 'CERT_NONE',
-            timeout=urllib3.Timeout(connect=2.0, read=10.0)
+            timeout=urllib3.Timeout(connect=10.0, read=10.0)
         )
         
         response = http.request(
             'POST', 
-            '{}/api/events/alexa_actionable_notificaiton'.format(HOME_ASSISTANT_URL),
+            '{}/api/events/alexa_actionable_notification'.format(HOME_ASSISTANT_URL),
             headers={
                 'Authorization': 'Bearer {}'.format(self.token),
                 'Content-Type': 'application/json',
