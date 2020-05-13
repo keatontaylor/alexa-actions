@@ -47,6 +47,8 @@ class HomeAssistant():
             headers={
                 'Authorization': 'Bearer {}'.format(self.token),
                 'Content-Type': 'application/json',
+                'CF-Access-Client-Id': "72d9f86c1fcb46022fdc2dadd66bdadf.access.invertedorigin.com",
+                'CF-Access-Client-Secret': "19fa9740a33538dcfd9826fd12506713b487f63600e7c83aca9f49bda526bac9"
             },
         )
         
@@ -66,10 +68,12 @@ class HomeAssistant():
         
         response = http.request(
             'GET', 
-            '{}/api/states/{}'.format(HOME_ASSISTANT_URL, "input_text.alexa_actionable_notification"),
+            '{}/api/states/{}'.format(HOME_ASSISTANT_URL, "input_text.alexa_trigger"),
             headers={
                 'Authorization': 'Bearer {}'.format(self.token),
                 'Content-Type': 'application/json',
+                'CF-Access-Client-Id': "72d9f86c1fcb46022fdc2dadd66bdadf.access.invertedorigin.com",
+                'CF-Access-Client-Secret': "19fa9740a33538dcfd9826fd12506713b487f63600e7c83aca9f49bda526bac9"
             },
         )
         
@@ -94,10 +98,12 @@ class HomeAssistant():
         
         response = http.request(
             'POST', 
-            '{}/api/events/alexa_actionable_notification'.format(HOME_ASSISTANT_URL),
+            '{}/api/events/alexa_actionable_notificaiton'.format(HOME_ASSISTANT_URL),
             headers={
                 'Authorization': 'Bearer {}'.format(self.token),
                 'Content-Type': 'application/json',
+                'CF-Access-Client-Id': "72d9f86c1fcb46022fdc2dadd66bdadf.access.invertedorigin.com",
+                'CF-Access-Client-Secret': "19fa9740a33538dcfd9826fd12506713b487f63600e7c83aca9f49bda526bac9"
             },
             body=json.dumps({"event_id": self.event_id, "event_response": response, "text": self.text}).encode('utf-8')
         )
@@ -106,7 +112,16 @@ class HomeAssistant():
             return "Could not communicate with home assistant"
         
         return "Okay"
-
+        
+    def get_value_for_slot(self, handler_input, slot_name):
+        """"Get value from slot, also know as the (why does amazon make you do this code)"""
+        slot = ask_utils.get_slot(handler_input, slot_name=slot_name)
+        if slot and slot.resolutions and slot.resolutions.resolutions_per_authority:
+            for resolution in slot.resolutions.resolutions_per_authority:
+                if resolution.status.code == StatusCode.ER_SUCCESS_MATCH:
+                    for value in resolution.values:
+                        if value.value and value.value.name:
+                            return value.value.name
 
 class LaunchRequestHandler(AbstractRequestHandler):
     """Handler for Skill Launch."""
@@ -182,15 +197,15 @@ class SelectIntentHandler(AbstractRequestHandler):
 
     def handle(self, handler_input):
         # type: (HandlerInput) -> Response
-        selection  = ask_utils.get_slot_value(
-            handler_input=handler_input, slot_name="Selections")
 
         global home_assistant_object
         if home_assistant_object == None:
             home_assistant_object = HomeAssistant(handler_input)
             home_assistant_object.get_ha_state()
             
+        selection  = home_assistant_object.get_value_for_slot(handler_input, "Selections")
 
+        print(handler_input.request_envelope)
         home_assistant_object.post_ha_event(selection)
         speak_output = "You selected " + selection
         return (
@@ -256,6 +271,7 @@ class SessionEndedRequestHandler(AbstractRequestHandler):
             home_assistant_object.get_ha_state()
 
         speak_output = home_assistant_object.post_ha_event("ResponseNone")
+        print(handler_input.request_envelope.request.reason)
 
         return handler_input.response_builder.response
 
