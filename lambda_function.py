@@ -50,9 +50,16 @@ class HomeAssistant():
             },
         )
         
-        if response.status >= 400:
-            print(response.data)
-            return "Could not communicate with home assistant"
+        if response.status == 401:
+            print("401 Error", response.data)
+            return "It looks like I am unauthorized to reach home assistant, please check your account linking or your long lived access token and try again."
+        elif response.status == 404:
+            print("404 Error", response.data)
+            return "It looks like I may not be able to find the input text entity. Please check that you've added it to home assistant and try again"
+        elif response.status >= 400:
+            print(f"{response.status} Error", response.data)
+            return "Could not communicate with home assistant. Please check the Amazon CloudWatch logs in the custom skill developer console."
+
         
         return "Communication with home assistant successful"
         
@@ -73,9 +80,15 @@ class HomeAssistant():
             },
         )
         
-        if response.status >= 400:
-            print(response.data)
-            return "Could not communicate with home assistant"
+        if response.status == 401:
+            print("401 Error", response.data)
+            return "It looks like I am unauthorized to reach home assistant, please check your account linking or your long lived access token and try again."
+        elif response.status == 404:
+            print("404 Error", response.data)
+            return "It looks like I may not be able to find the input text entity. Please check that you've added it to home assistant and try again"
+        elif response.status >= 400:
+            print(f"{response.status} Error", response.data)
+            return "Could not communicate with home assistant. Please check the Amazon CloudWatch logs in the custom skill developer console."
             
         decoded_response = json.loads(response.data.decode('utf-8'))['state']
         
@@ -102,9 +115,16 @@ class HomeAssistant():
             body=json.dumps({"event_id": self.event_id, "event_response": response, "text": self.text}).encode('utf-8')
         )
         
-        if response.status >= 400:
-            return "Could not communicate with home assistant"
-        
+        if response.status == 401:
+            print("401 Error", response.data)
+            return "It looks like I am unauthorized to reach home assistant, please check your account linking or your long lived access token and try again."
+        elif response.status == 404:
+            print("404 Error", response.data)
+            return "It looks like I may not be able to find the input text entity. Please check that you've added it to home assistant and try again"
+        elif response.status >= 400:
+            print(f"{response.status} Error", response.data)
+            return "Could not communicate with home assistant. Please check the Amazon CloudWatch logs in the custom skill developer console."
+ 
         return "Okay"
         
     def get_value_for_slot(self, handler_input, slot_name):
