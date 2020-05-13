@@ -38,7 +38,7 @@ class HomeAssistant():
         
         http = urllib3.PoolManager(
             cert_reqs='CERT_REQUIRED' if VERIFY_SSL else 'CERT_NONE',
-            timeout=urllib3.Timeout(connect=2.0, read=10.0)
+            timeout=urllib3.Timeout(connect=10.0, read=10.0)
         )
         
         response = http.request(
@@ -47,8 +47,6 @@ class HomeAssistant():
             headers={
                 'Authorization': 'Bearer {}'.format(self.token),
                 'Content-Type': 'application/json',
-                'CF-Access-Client-Id': "72d9f86c1fcb46022fdc2dadd66bdadf.access.invertedorigin.com",
-                'CF-Access-Client-Secret': "19fa9740a33538dcfd9826fd12506713b487f63600e7c83aca9f49bda526bac9"
             },
         )
         
@@ -63,17 +61,15 @@ class HomeAssistant():
         
         http = urllib3.PoolManager(
             cert_reqs='CERT_REQUIRED' if VERIFY_SSL else 'CERT_NONE',
-            timeout=urllib3.Timeout(connect=2.0, read=10.0)
+            timeout=urllib3.Timeout(connect=10.0, read=10.0)
         )
         
         response = http.request(
             'GET', 
-            '{}/api/states/{}'.format(HOME_ASSISTANT_URL, "input_text.alexa_trigger"),
+            '{}/api/states/{}'.format(HOME_ASSISTANT_URL, "input_text.alexa_actionable_notification"),
             headers={
                 'Authorization': 'Bearer {}'.format(self.token),
                 'Content-Type': 'application/json',
-                'CF-Access-Client-Id': "72d9f86c1fcb46022fdc2dadd66bdadf.access.invertedorigin.com",
-                'CF-Access-Client-Secret': "19fa9740a33538dcfd9826fd12506713b487f63600e7c83aca9f49bda526bac9"
             },
         )
         
@@ -102,8 +98,6 @@ class HomeAssistant():
             headers={
                 'Authorization': 'Bearer {}'.format(self.token),
                 'Content-Type': 'application/json',
-                'CF-Access-Client-Id': "72d9f86c1fcb46022fdc2dadd66bdadf.access.invertedorigin.com",
-                'CF-Access-Client-Secret': "19fa9740a33538dcfd9826fd12506713b487f63600e7c83aca9f49bda526bac9"
             },
             body=json.dumps({"event_id": self.event_id, "event_response": response, "text": self.text}).encode('utf-8')
         )
