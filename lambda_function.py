@@ -98,13 +98,21 @@ class HomeAssistant():
         
         return self.text
         
-    def post_ha_event(self, response: str):
+    def post_ha_event(self, handler_input, response: str):
         """Send event to HA."""
         
         http = urllib3.PoolManager(
             cert_reqs='CERT_REQUIRED' if VERIFY_SSL else 'CERT_NONE',
             timeout=urllib3.Timeout(connect=10.0, read=10.0)
         )
+        
+        person_id = ""
+        person_speak_name = ""
+        try:
+            person_id = handler_input.request_envelope.context.system.person.person_id
+            person_speak_name = f'<alexa:name type="first" personId="{person_id}"/>'
+        except:
+            print('I could not recognize the person who spoke to me.')
         
         response = http.request(
             'POST', 
@@ -113,7 +121,7 @@ class HomeAssistant():
                 'Authorization': 'Bearer {}'.format(self.token),
                 'Content-Type': 'application/json',
             },
-            body=json.dumps({"event_id": self.event_id, "event_response": response, "text": self.text}).encode('utf-8')
+            body=json.dumps({"event_id": self.event_id, "event_response": response, "text": self.text, "event_person_id": person_id}).encode('utf-8')
         )
         
         if response.status == 401:
@@ -126,7 +134,7 @@ class HomeAssistant():
             print(f"{response.status} Error", response.data)
             return "Could not communicate with home assistant. Please check the Amazon CloudWatch logs in the custom skill developer console."
 
-        return "Okay"
+        return "Okay" + person_speak_name
 
     def get_value_for_slot(self, handler_input, slot_name):
         """"Get value from slot, also know as the (why does amazon make you do this code)"""
@@ -173,7 +181,7 @@ class YesIntentHanlder(AbstractRequestHandler):
             home_assistant_object = HomeAssistant(handler_input)
             home_assistant_object.get_ha_state()
         
-        speak_output = home_assistant_object.post_ha_event("ResponseYes")
+        speak_output = home_assistant_object.post_ha_event(handler_input, "ResponseYes")
         return (
             handler_input.response_builder
                 .speak(speak_output)
@@ -196,7 +204,7 @@ class NoIntentHanlder(AbstractRequestHandler):
             home_assistant_object = HomeAssistant(handler_input)
             home_assistant_object.get_ha_state()
         
-        speak_output = home_assistant_object.post_ha_event("ResponseNo")        
+        speak_output = home_assistant_object.post_ha_event(handler_input, "ResponseNo")        
         return (
             handler_input.response_builder
                 .speak(speak_output)
@@ -221,7 +229,7 @@ class SelectIntentHandler(AbstractRequestHandler):
         selection  = home_assistant_object.get_value_for_slot(handler_input, "Selections")
 
         print(handler_input.request_envelope)
-        home_assistant_object.post_ha_event(selection)
+        home_assistant_object.post_ha_event(hanler_input, selection)
         speak_output = "You selected " + selection
         return (
             handler_input.response_builder
@@ -285,7 +293,7 @@ class SessionEndedRequestHandler(AbstractRequestHandler):
             home_assistant_object = HomeAssistant(handler_input)
             home_assistant_object.get_ha_state()
 
-        speak_output = home_assistant_object.post_ha_event("ResponseNone")
+        speak_output = home_assistant_object.post_ha_event(handler_input, "ResponseNone")
         print(handler_input.request_envelope.request.reason)
 
         return handler_input.response_builder.response
