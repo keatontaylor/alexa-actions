@@ -125,9 +125,9 @@ class HomeAssistant():
         elif response.status >= 400:
             print(f"{response.status} Error", response.data)
             return "Could not communicate with home assistant. Please check the Amazon CloudWatch logs in the custom skill developer console."
- 
+
         return "Okay"
-        
+
     def get_value_for_slot(self, handler_input, slot_name):
         """"Get value from slot, also know as the (why does amazon make you do this code)"""
         slot = ask_utils.get_slot(handler_input, slot_name=slot_name)
