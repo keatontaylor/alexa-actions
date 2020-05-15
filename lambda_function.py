@@ -47,7 +47,7 @@ class HomeAssistant():
             '{}/api/config'.format(HOME_ASSISTANT_URL),
             headers={
                 'Authorization': 'Bearer {}'.format(self.token),
-                'Content-Type': 'application/json',
+                'Content-Type': 'application/json'
             },
         )
         
@@ -77,7 +77,7 @@ class HomeAssistant():
             '{}/api/states/{}'.format(HOME_ASSISTANT_URL, "input_text.alexa_actionable_notification"),
             headers={
                 'Authorization': 'Bearer {}'.format(self.token),
-                'Content-Type': 'application/json',
+                'Content-Type': 'application/json'
             },
         )
         
@@ -119,7 +119,7 @@ class HomeAssistant():
             '{}/api/events/alexa_actionable_notification'.format(HOME_ASSISTANT_URL),
             headers={
                 'Authorization': 'Bearer {}'.format(self.token),
-                'Content-Type': 'application/json',
+                'Content-Type': 'application/json'
             },
             body=json.dumps({"event_id": self.event_id, "event_response": response, "text": self.text, "event_person_id": person_id}).encode('utf-8')
         )
@@ -228,8 +228,7 @@ class SelectIntentHandler(AbstractRequestHandler):
             
         selection  = home_assistant_object.get_value_for_slot(handler_input, "Selections")
 
-        print(handler_input.request_envelope)
-        home_assistant_object.post_ha_event(hanler_input, selection)
+        home_assistant_object.post_ha_event(handler_input, selection)
         speak_output = "You selected " + selection
         return (
             handler_input.response_builder
