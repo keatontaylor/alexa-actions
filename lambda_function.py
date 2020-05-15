@@ -110,6 +110,7 @@ class HomeAssistant():
         person_speak_name = ""
         try:
             person_id = handler_input.request_envelope.context.system.person.person_id
+            print(person_id)
             person_speak_name = f'<alexa:name type="first" personId="{person_id}"/>'
         except:
             print('I could not recognize the person who spoke to me.')
