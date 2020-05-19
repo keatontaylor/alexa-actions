@@ -1,7 +1,7 @@
 ## VERSION 0.6.0
 
 # UPDATE THESE VARIABLES WITH YOUR CONFIG
-HOME_ASSISTANT_URL                = 'https://ha.invertedorigin.com'       # REPLACE WITH THE URL FOR YOUR HA FRONTEND
+HOME_ASSISTANT_URL                = 'https://yourhainstall.com'       # REPLACE WITH THE URL FOR YOUR HA FRONTEND
 VERIFY_SSL                        = True                              # SET TO FALSE IF YOU DO NOT HAVE VALID CERTS
 TOKEN                             = ''                                # ADD YOUR LONG LIVED TOKEN IF NEEDED OTHERWISE LEAVE BLANK
 
