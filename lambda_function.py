@@ -125,6 +125,7 @@ class HomeAssistant(Borg):
         
         if self.handler_input.request_envelope.context.system.person:
             person_id = self.handler_input.request_envelope.context.system.person.person_id
+            request_body['event_person_id'] = person_id
             
         response = http.request(
             'POST', 
