@@ -1,7 +1,7 @@
 ## VERSION 0.6.0
 
 # UPDATE THESE VARIABLES WITH YOUR CONFIG
-HOME_ASSISTANT_URL                = 'https://ha.invertedorigin.com'       # REPLACE WITH THE URL FOR YOUR HA FRONTEND
+HOME_ASSISTANT_URL                = 'https://yourhainstall.com'       # REPLACE WITH THE URL FOR YOUR HA FRONTEND
 VERIFY_SSL                        = True                              # SET TO FALSE IF YOU DO NOT HAVE VALID CERTS
 TOKEN                             = ''                                # ADD YOUR LONG LIVED TOKEN IF NEEDED OTHERWISE LEAVE BLANK
 
@@ -49,11 +49,10 @@ class HomeAssistant(Borg):
 
         self.token = self._fetch_token() if TOKEN == "" else TOKEN
         
-        if not hasattr(self, 'ha_state'):
+        if not hasattr(self, 'ha_state') or self.ha_state is None:
             self.get_ha_state()
     
     def _clear_state(self):
-        self.handler_input = None
         self.ha_state = None
 
     def _fetch_token(self):
