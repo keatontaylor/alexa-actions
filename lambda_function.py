@@ -345,15 +345,22 @@ class CatchAllExceptionHandler(AbstractExceptionHandler):
     def handle(self, handler_input, exception):
         print("CatchAllExceptionHandler")
         logger.error(exception, exc_info=True)
-        speak_output = "Sorry, I had trouble doing what you asked, or couldn't understand you. \
-                        Please try again."
+        home_assistant_object = HomeAssistant()      
+        
+        if hasattr(home_assistant_object, 'ha_state') and home_assistant_object.ha_state != None and 'text' in home_assistant_object.ha_state:
+            return (
+                handler_input.response_builder
+                    .speak("Sorry I did not catch that... <break time='200ms'/> " + home_assistant_object.ha_state['text'])
+                    .ask('')
+                    .response
+            )
+        else:
+            return (
+                handler_input.response_builder
+                    .speak("Sorry, I am having trouble, please check your configuration, in the custom skill and try again.")
+                    .response
+            )
 
-        return (
-            handler_input.response_builder
-                .speak(speak_output)
-                .ask('')
-                .response
-        )
 
 # The SkillBuilder object acts as the entry point for your skill, routing all request and response
 # payloads to the handlers above. Make sure any new handlers or interceptors you've
