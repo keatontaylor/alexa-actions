@@ -1,8 +1,16 @@
 ## VERSION 0.6.0
 
+# UPDATE THESE VARIABLES WITH YOUR CONFIG
+HOME_ASSISTANT_URL                = 'https://ha.invertedorigin.com'       # REPLACE WITH THE URL FOR YOUR HA FRONTEND
+VERIFY_SSL                        = True                              # SET TO FALSE IF YOU DO NOT HAVE VALID CERTS
+TOKEN                             = ''                                # ADD YOUR LONG LIVED TOKEN IF NEEDED OTHERWISE LEAVE BLANK
+
+### NO NEED TO EDIT ANYTHING UNDER THE LINE ###
 import logging
 import urllib3
 import json
+import isodate
+from datetime import datetime
 
 import ask_sdk_core.utils as ask_utils
 from ask_sdk_core.skill_builder import SkillBuilder
@@ -10,60 +18,64 @@ from ask_sdk_core.dispatch_components import AbstractRequestHandler
 from ask_sdk_core.dispatch_components import AbstractExceptionHandler
 from ask_sdk_core.handler_input import HandlerInput
 from ask_sdk_model.slu.entityresolution import StatusCode
-
 from ask_sdk_model import Response
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-# UPDATE THESE VARIABLES WITH YOUR CONFIG
-HOME_ASSISTANT_URL                = 'https://yourhainstall.com'       # REPLACE WITH THE URL FOR YOUR HA FRONTEND
-VERIFY_SSL                        = True                              # SET TO FALSE IF YOU DO NOT HAVE VALID CERTS
-TOKEN                             = ''                                # ADD YOUR LONG LIVED TOKEN IF NEEDED OTHERWISE LEAVE BLANK
 
-home_assistant_object = None
-class HomeAssistant():
-    """Class to abstract access to HA."""
-    def __init__(self, handler_input):
-        self.event_id = ""
-        self.text = ""
-        self.handler_input = handler_input
+INPUT_TEXT_ENTITY = "input_text.alexa_actionable_notification"
+
+RESPONSE_YES = "ResponseYes"
+RESPONSE_NO = "ResponseNo"
+RESPONSE_NONE = "ResponseNone"
+RESPONSE_SELECT = "ResponseSelect"
+RESPONSE_NUMERIC = "ResponseNumeric"
+RESPONSE_DURATION = "ResponseDuration"
+
+
+class Borg:
+    """Borg MonoState Class for State Persistence."""
+    _shared_state = {}
+    def __init__(self):
+        self.__dict__ = self._shared_state
+
+class HomeAssistant(Borg):
+    """HomeAssistant Wrapper Class."""
+    def __init__(self, handler_input=None):
+        Borg.__init__(self)
+        if handler_input: 
+            self.handler_input = handler_input
+
+        self.token = self._fetch_token() if TOKEN == "" else TOKEN
         
-        self.token = self._fetch_token(handler_input) if TOKEN == "" else TOKEN
+        if not hasattr(self, 'ha_state'):
+            self.get_ha_state()
     
-    def _fetch_token(self, handler_input):
-        return ask_utils.get_account_linking_access_token(handler_input)
-        
-    def get_health_check(self):
-        """Check connection to HA."""
-        
-        http = urllib3.PoolManager(
-            cert_reqs='CERT_REQUIRED' if VERIFY_SSL else 'CERT_NONE',
-            timeout=urllib3.Timeout(connect=10.0, read=10.0)
-        )
-        
-        response = http.request(
-            'GET', 
-            '{}/api/config'.format(HOME_ASSISTANT_URL),
-            headers={
-                'Authorization': 'Bearer {}'.format(self.token),
-                'Content-Type': 'application/json'
-            },
-        )
-        
-        if response.status == 401:
-            print("401 Error", response.data)
-            return "It looks like I am unauthorized to reach home assistant, please check your account linking or your long lived access token and try again."
-        elif response.status == 404:
-            print("404 Error", response.data)
-            return "It looks like I may not be able to find the input text entity. Please check that you've added it to home assistant and try again"
-        elif response.status >= 400:
-            print(f"{response.status} Error", response.data)
-            return "Could not communicate with home assistant. Please check the Amazon CloudWatch logs in the custom skill developer console."
+    def _clear_state(self):
+        self.handler_input = None
+        self.ha_state = None
 
-        
-        return "Communication with home assistant successful"
-        
+    def _fetch_token(self):
+        return ask_utils.get_account_linking_access_token(self.handler_input)
+
+    def _check_response_errors(self, response):
+        if response.status == 401:
+            print("401 Error", response.data) ## Add proper logging
+            return "It looks like I am unauthorized to reach home assistant, \
+                    please check your account linking or your long lived access \
+                    token and try again."
+        elif response.status == 404:
+            print("404 Error", response.data) ## Add proper logging
+            return "It looks like I may not be able to find the input text entity. \
+                    Please check that you've added it to home assistant and try again"
+        elif response.status >= 400:
+            print(f"{response.status} Error", response.data) ## Add proper logging
+            return "Could not communicate with home assistant. Please check the Amazon \
+                    CloudWatch logs in the custom skill developer console."
+
+        return None
+
     def get_ha_state(self):
         """Get State from HA."""
         
@@ -71,49 +83,49 @@ class HomeAssistant():
             cert_reqs='CERT_REQUIRED' if VERIFY_SSL else 'CERT_NONE',
             timeout=urllib3.Timeout(connect=10.0, read=10.0)
         )
-        
+
         response = http.request(
             'GET', 
-            '{}/api/states/{}'.format(HOME_ASSISTANT_URL, "input_text.alexa_actionable_notification"),
+            '{}/api/states/{}'.format(HOME_ASSISTANT_URL, INPUT_TEXT_ENTITY),
             headers={
                 'Authorization': 'Bearer {}'.format(self.token),
                 'Content-Type': 'application/json'
             },
         )
-        
-        if response.status == 401:
-            print("401 Error", response.data)
-            return "It looks like I am unauthorized to reach home assistant, please check your account linking or your long lived access token and try again."
-        elif response.status == 404:
-            print("404 Error", response.data)
-            return "It looks like I may not be able to find the input text entity. Please check that you've added it to home assistant and try again"
-        elif response.status >= 400:
-            print(f"{response.status} Error", response.data)
-            return "Could not communicate with home assistant. Please check the Amazon CloudWatch logs in the custom skill developer console."
-            
+
+        errors = self._check_response_errors(response)
+        if not errors:
+            self.ha_state = {
+                "error": True,
+                "text": errors
+            }
+
         decoded_response = json.loads(response.data.decode('utf-8'))['state']
         
-        self.event_id =  json.loads(decoded_response)['event']
-        self.text = json.loads(decoded_response)['text']
+        self.ha_state = {
+            "error": False,
+            "event_id": json.loads(decoded_response)['event'],
+            "text": json.loads(decoded_response)['text']
+        }
         
-        return self.text
-        
-    def post_ha_event(self, handler_input, response: str):
+    def post_ha_event(self, response: str, response_type: str, **kwargs):
         """Send event to HA."""
         
         http = urllib3.PoolManager(
             cert_reqs='CERT_REQUIRED' if VERIFY_SSL else 'CERT_NONE',
             timeout=urllib3.Timeout(connect=10.0, read=10.0)
         )
+
+        request_body = {
+            "event_id": self.ha_state['event_id'],
+            "event_response": response,
+            "event_response_type": response_type
+        }
+        request_body.update(kwargs)
         
-        person_id = ""
-        person_speak_name = ""
-        try:
-            person_id = handler_input.request_envelope.context.system.person.person_id
-            person_speak_name = f'<alexa:name type="first" personId="{person_id}"/>'
-        except:
-            print('I could not recognize the person who spoke to me.')
-        
+        if self.handler_input.request_envelope.context.system.person:
+            person_id = self.handler_input.request_envelope.context.system.person.person_id
+            
         response = http.request(
             'POST', 
             '{}/api/events/alexa_actionable_notification'.format(HOME_ASSISTANT_URL),
@@ -121,24 +133,20 @@ class HomeAssistant():
                 'Authorization': 'Bearer {}'.format(self.token),
                 'Content-Type': 'application/json'
             },
-            body=json.dumps({"event_id": self.event_id, "event_response": response, "text": self.text, "event_person_id": person_id}).encode('utf-8')
+            body=json.dumps(request_body).encode('utf-8')
         )
         
-        if response.status == 401:
-            print("401 Error", response.data)
-            return "It looks like I am unauthorized to reach home assistant, please check your account linking or your long lived access token and try again."
-        elif response.status == 404:
-            print("404 Error", response.data)
-            return "It looks like I may not be able to find the input text entity. Please check that you've added it to home assistant and try again"
-        elif response.status >= 400:
-            print(f"{response.status} Error", response.data)
-            return "Could not communicate with home assistant. Please check the Amazon CloudWatch logs in the custom skill developer console."
+        error = self._check_response_errors(response)
 
-        return "Okay" + person_speak_name
+        if error:
+            return error
+        
+        self._clear_state()
+        return "Okay"
 
-    def get_value_for_slot(self, handler_input, slot_name):
-        """"Get value from slot, also know as the (why does amazon make you do this code)"""
-        slot = ask_utils.get_slot(handler_input, slot_name=slot_name)
+    def get_value_for_slot(self, slot_name):
+        """"Get value from slot, also know as the (why does amazon make you do this)"""
+        slot = ask_utils.get_slot(self.handler_input, slot_name=slot_name)
         if slot and slot.resolutions and slot.resolutions.resolutions_per_authority:
             for resolution in slot.resolutions.resolutions_per_authority:
                 if resolution.status.code == StatusCode.ER_SUCCESS_MATCH:
@@ -146,18 +154,15 @@ class HomeAssistant():
                         if value.value and value.value.name:
                             return value.value.name
 
+
 class LaunchRequestHandler(AbstractRequestHandler):
     """Handler for Skill Launch."""
     def can_handle(self, handler_input):
-        # type: (HandlerInput) -> bool
         return ask_utils.is_request_type("LaunchRequest")(handler_input)
 
     def handle(self, handler_input):
-        # type: (HandlerInput) -> Response
-        
-        global home_assistant_object
         home_assistant_object = HomeAssistant(handler_input)
-        speak_output = home_assistant_object.get_ha_state()
+        speak_output = home_assistant_object.ha_state['text'] 
 
         return (
             handler_input.response_builder
@@ -170,22 +175,15 @@ class LaunchRequestHandler(AbstractRequestHandler):
 class YesIntentHanlder(AbstractRequestHandler):
     """Handler for Yes Intent."""
     def can_handle(self, handler_input):
-        # type: (HandlerInput) -> bool
         return ask_utils.is_intent_name("AMAZON.YesIntent")(handler_input)
 
     def handle(self, handler_input):
-        # type: (HandlerInput) -> Response
-        
-        global home_assistant_object
-        if home_assistant_object == None:
-            home_assistant_object = HomeAssistant(handler_input)
-            home_assistant_object.get_ha_state()
-        
-        speak_output = home_assistant_object.post_ha_event(handler_input, "ResponseYes")
+        home_assistant_object = HomeAssistant(handler_input)
+        speak_output = home_assistant_object.post_ha_event(RESPONSE_YES, RESPONSE_YES)
+
         return (
             handler_input.response_builder
                 .speak(speak_output)
-                # .ask("add a reprompt if you want to keep the session open for the user to respond")
                 .response
         )
 
@@ -193,68 +191,96 @@ class YesIntentHanlder(AbstractRequestHandler):
 class NoIntentHanlder(AbstractRequestHandler):
     """Handler for No Intent."""
     def can_handle(self, handler_input):
-        # type: (HandlerInput) -> bool
         return ask_utils.is_intent_name("AMAZON.NoIntent")(handler_input)
 
     def handle(self, handler_input):
-        # type: (HandlerInput) -> Response
-        
-        global home_assistant_object
-        if home_assistant_object == None:
-            home_assistant_object = HomeAssistant(handler_input)
-            home_assistant_object.get_ha_state()
-        
-        speak_output = home_assistant_object.post_ha_event(handler_input, "ResponseNo")        
+        home_assistant_object = HomeAssistant(handler_input)
+        speak_output = home_assistant_object.post_ha_event(RESPONSE_NO, RESPONSE_NO)   
+
         return (
             handler_input.response_builder
                 .speak(speak_output)
-                # .ask("add a reprompt if you want to keep the session open for the user to respond")
                 .response
         )
+
+
+class NumericIntentHandler(AbstractRequestHandler):
+    """Handler for Select Intent."""
+    def can_handle(self, handler_input):
+        return ask_utils.is_intent_name("Number")(handler_input)
+
+    def handle(self, handler_input):
+        home_assistant_object = HomeAssistant(handler_input)
+        number  = ask_utils.get_slot_value(handler_input, "Numbers")
+        if number == '?':
+            raise
+        speak_output = home_assistant_object.post_ha_event(number, RESPONSE_NUMERIC)
+
+        return (
+            handler_input.response_builder
+                .speak(speak_output)
+                .response
+        )
+
 
 class SelectIntentHandler(AbstractRequestHandler):
     """Handler for Select Intent."""
     def can_handle(self, handler_input):
-        # type: (HandlerInput) -> bool
         return ask_utils.is_intent_name("Select")(handler_input)
 
     def handle(self, handler_input):
-        # type: (HandlerInput) -> Response
+        home_assistant_object = HomeAssistant(handler_input)
+        selection  = home_assistant_object.get_value_for_slot("Selections")
+        if selection:
+            home_assistant_object.post_ha_event(selection, RESPONSE_SELECT)
+            speak_output = "You selected " + selection
+        else:
+            raise
 
-        global home_assistant_object
-        if home_assistant_object == None:
-            home_assistant_object = HomeAssistant(handler_input)
-            home_assistant_object.get_ha_state()
-            
-        selection  = home_assistant_object.get_value_for_slot(handler_input, "Selections")
-
-        home_assistant_object.post_ha_event(handler_input, selection)
-        speak_output = "You selected " + selection
         return (
             handler_input.response_builder
                 .speak(speak_output)
-                # .ask("add a reprompt if you want to keep the session open for the user to respond")
                 .response
         )
 
-class HelpIntentHandler(AbstractRequestHandler):
-    """Handler for Help Intent."""
-    
+
+class DurationIntentHandler(AbstractRequestHandler):
+    """Handler for Select Intent."""
     def can_handle(self, handler_input):
-        # type: (HandlerInput) -> bool
-        return ask_utils.is_intent_name("AMAZON.HelpIntent")(handler_input)
+        return ask_utils.is_intent_name("Duration")(handler_input)
 
     def handle(self, handler_input):
-        # type: (HandlerInput) -> Response
-        
-        global home_assistant_object
         home_assistant_object = HomeAssistant(handler_input)
-        speak_output = home_assistant_object.get_health_check()
+        duration  = ask_utils.get_slot_value(handler_input, "Durations")
+        speak_output = home_assistant_object.post_ha_event(isodate.parse_duration(duration).total_seconds(), RESPONSE_DURATION)
 
         return (
             handler_input.response_builder
                 .speak(speak_output)
-                .ask(speak_output)
+                .response
+        )
+
+
+class DateTimeIntentHandler(AbstractRequestHandler):
+    """Handler for Select Intent."""
+    def can_handle(self, handler_input):
+        return ask_utils.is_intent_name("Date")(handler_input)
+
+    def handle(self, handler_input):
+        home_assistant_object = HomeAssistant(handler_input)
+        
+        dates = ask_utils.get_slot_value(handler_input, "Dates")
+        times = ask_utils.get_slot_value(handler_input, "Times")
+        
+        if not dates and not times:
+            raise
+        
+        speak_output = "Sorry, I can not do specific dates right now, try a duration instead, like... in 5 hours"
+
+        return (
+            handler_input.response_builder
+                .speak(speak_output)
+                .ask('')
                 .response
         )
 
@@ -262,12 +288,10 @@ class HelpIntentHandler(AbstractRequestHandler):
 class CancelOrStopIntentHandler(AbstractRequestHandler):
     """Single handler for Cancel and Stop Intent."""
     def can_handle(self, handler_input):
-        # type: (HandlerInput) -> bool
         return (ask_utils.is_intent_name("AMAZON.CancelIntent")(handler_input) or
                 ask_utils.is_intent_name("AMAZON.StopIntent")(handler_input))
 
     def handle(self, handler_input):
-        # type: (HandlerInput) -> Response
         print("CancelOrStopIntentHandler")
         speak_output = "Goodbye!"
 
@@ -281,19 +305,11 @@ class CancelOrStopIntentHandler(AbstractRequestHandler):
 class SessionEndedRequestHandler(AbstractRequestHandler):
     """Handler for Session End."""
     def can_handle(self, handler_input):
-        # type: (HandlerInput) -> bool
         return ask_utils.is_request_type("SessionEndedRequest")(handler_input)
 
     def handle(self, handler_input):
-        # type: (HandlerInput) -> Response
-
-        global home_assistant_object
-        if home_assistant_object == None:
-            home_assistant_object = HomeAssistant(handler_input)
-            home_assistant_object.get_ha_state()
-
-        speak_output = home_assistant_object.post_ha_event(handler_input, "ResponseNone")
-        print(handler_input.request_envelope.request.reason)
+        home_assistant_object = HomeAssistant()
+        speak_output = home_assistant_object.post_ha_event(RESPONSE_NONE, RESPONSE_NONE)
 
         return handler_input.response_builder.response
 
@@ -305,20 +321,15 @@ class IntentReflectorHandler(AbstractRequestHandler):
     handler chain below.
     """
     def can_handle(self, handler_input):
-        # type: (HandlerInput) -> bool
         return ask_utils.is_request_type("IntentRequest")(handler_input)
 
     def handle(self, handler_input):
-        # type: (HandlerInput) -> Response
-        
-        print("IntentReflectorHandler")
         intent_name = ask_utils.get_intent_name(handler_input)
         speak_output = "You just triggered " + intent_name + "."
 
         return (
             handler_input.response_builder
                 .speak(speak_output)
-                # .ask("add a reprompt if you want to keep the session open for the user to respond")
                 .response
         )
 
@@ -329,19 +340,18 @@ class CatchAllExceptionHandler(AbstractExceptionHandler):
     the intent being invoked or included it in the skill builder below.
     """
     def can_handle(self, handler_input, exception):
-        # type: (HandlerInput, Exception) -> bool
         return True
 
     def handle(self, handler_input, exception):
-        # type: (HandlerInput, Exception) -> Response
         print("CatchAllExceptionHandler")
         logger.error(exception, exc_info=True)
-        speak_output = "Sorry, I had trouble doing what you asked. Please try again."
+        speak_output = "Sorry, I had trouble doing what you asked, or couldn't understand you. \
+                        Please try again."
 
         return (
             handler_input.response_builder
                 .speak(speak_output)
-                .ask(speak_output)
+                .ask('')
                 .response
         )
 
@@ -349,18 +359,19 @@ class CatchAllExceptionHandler(AbstractExceptionHandler):
 # payloads to the handlers above. Make sure any new handlers or interceptors you've
 # defined are included below. The order matters - they're processed top to bottom.
 
-
 sb = SkillBuilder()
 
 sb.add_request_handler(LaunchRequestHandler())
 sb.add_request_handler(YesIntentHanlder())
 sb.add_request_handler(NoIntentHanlder())
-sb.add_request_handler(HelpIntentHandler())
 sb.add_request_handler(SelectIntentHandler())
+sb.add_request_handler(NumericIntentHandler())
+sb.add_request_handler(DurationIntentHandler())
+sb.add_request_handler(DateTimeIntentHandler())
 sb.add_request_handler(CancelOrStopIntentHandler())
 sb.add_request_handler(SessionEndedRequestHandler())
-sb.add_request_handler(IntentReflectorHandler()) # make sure IntentReflectorHandler is last so it doesn't override your custom intent handlers
 
+sb.add_request_handler(IntentReflectorHandler()) 
 sb.add_exception_handler(CatchAllExceptionHandler())
 
 lambda_handler = sb.lambda_handler()
