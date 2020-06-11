@@ -19,6 +19,7 @@ from ask_sdk_core.dispatch_components import AbstractExceptionHandler
 from ask_sdk_core.handler_input import HandlerInput
 from ask_sdk_model.slu.entityresolution import StatusCode
 from ask_sdk_model import Response
+from ask_sdk_model import SessionEndedReason
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -308,8 +309,9 @@ class SessionEndedRequestHandler(AbstractRequestHandler):
         return ask_utils.is_request_type("SessionEndedRequest")(handler_input)
 
     def handle(self, handler_input):
-        home_assistant_object = HomeAssistant()
-        speak_output = home_assistant_object.post_ha_event(RESPONSE_NONE, RESPONSE_NONE)
+        home_assistant_object = HomeAssistant(handler_input)
+        if handler_input.request_envelope.request.reason == SessionEndedReason.EXCEEDED_MAX_REPROMPTS:
+            home_assistant_object.post_ha_event(RESPONSE_NONE, RESPONSE_NONE)
 
         return handler_input.response_builder.response
 
