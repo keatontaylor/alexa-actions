@@ -1,0 +1,3 @@
+boto3==1.9.216
+ask-sdk-core==1.11.0
+isodate==0.6.0

@@ -1,0 +1,30 @@
+{
+	"en": {
+	    "ERROR_401": "It looks like I am unauthorized to reach home assistant, please check your account linking or your long lived access token and try again",
+		"ERROR_404": "It looks like I may not be able to find the input text entity. Please check that you've added it to home assistant and try again",
+		"ERROR_400": "Could not communicate with home assistant. Please check the Amazon CloudWatch logs in the custom skill developer console.",
+	    "ERROR_ACOUSTIC": "Sorry I did not catch that... <break time='200ms'/> {}",
+		"ERROR_CONFIG": "Sorry, I am having trouble, please check your configuration, in the custom skill and try again.",
+		"ERROR_SPECIFIC_DATE": "Sorry, I can not do specific dates right now, try a duration instead, like... in 5 hours",
+		"HELP_MESSAGE": "This skill should be only reactively while triggered via home assistant.",
+		"OKAY": "Okay",
+		"SKILL_NAME": "home assistant custom actions",
+		"STOP_MESSAGE": "Goodbye!",
+		"SELECTED" : "You selected {}",
+		"WELCOME_MESSAGE": "Welcome to {}. Input text is: {}"
+	},
+	"de": {
+	    "ERROR_401": "Ich habe scheinbar keine Berechtigungen für die verbindung zu home assistant. Bitte prüfe deinen H A Benutzer oder Access Token.",
+		"ERROR_404": "Ich kann kein input text Objekt in home assistant finden. Bitte überprüfe ob du dieses bereits hinzugefügt hast.",
+		"ERROR_400": "Ich kann keine Verbindung zum home assistant vornehmen. Bitte prüfe die Amazon CloudWatch logdateien in der Alexa Entwickler Console.",
+		"ERROR_ACOUSTIC": "Das habe ich leider nicht verstanden... <break time='200ms'/> {}",
+		"ERROR_CONFIG": "Entschuldige, hier ist etwas schief gelaufen. Bitte prüfe deine Konfiugration im custom skill und versuche es erneut.",
+		"ERROR_SPECIFIC_DATE": "Ich kann leider noch kein spezifisches Datum verarbeiten. Bitte nutze stattedessen Zeiträume wie beispielsweise... in 5 Stunden.",
+		"HELP_MESSAGE": "Dieser Skill sollte nur reaktiv genutzt werden, wenn er via home assistant angestossen wird",
+		"OKAY": "Okay",
+		"SELECTED" : "Du hast {} gewählt",
+		"SKILL_NAME": "home assistant custom actions",
+		"STOP_MESSAGE": "Machs gut!",
+		"WELCOME_MESSAGE": "Willkommen bei {}. Der input text ist: {}"
+	}
+}
