@@ -1,4 +1,4 @@
-## VERSION 0.7.2
+## VERSION 0.8.1
 
 # UPDATE THESE VARIABLES WITH YOUR CONFIG
 HOME_ASSISTANT_URL                = 'https://yourhainstall.com'       # REPLACE WITH THE URL FOR YOUR HA FRONTEND
@@ -10,12 +10,14 @@ import logging
 import urllib3
 import json
 import isodate
+import prompts
 from datetime import datetime
 
 import ask_sdk_core.utils as ask_utils
 from ask_sdk_core.skill_builder import SkillBuilder
 from ask_sdk_core.dispatch_components import AbstractRequestHandler
 from ask_sdk_core.dispatch_components import AbstractExceptionHandler
+from ask_sdk_core.dispatch_components import AbstractRequestInterceptor
 from ask_sdk_core.handler_input import HandlerInput
 from ask_sdk_model.slu.entityresolution import StatusCode
 from ask_sdk_model import Response
@@ -59,19 +61,19 @@ class HomeAssistant(Borg):
         return ask_utils.get_account_linking_access_token(self.handler_input)
 
     def _check_response_errors(self, response):
+        data = self.handler_input.attributes_manager.request_attributes["_"]
         if response.status == 401:
-            print("401 Error", response.data) ## Add proper logging
-            return "It looks like I am unauthorized to reach home assistant, \
-                    please check your account linking or your long lived access \
-                    token and try again."
+            logger.error("401 Error", response.data)
+            speak_output = "Error 401 " + data[prompts.ERROR_401]
+            return speak_output
         elif response.status == 404:
-            print("404 Error", response.data) ## Add proper logging
-            return "It looks like I may not be able to find the input text entity. \
-                    Please check that you've added it to home assistant and try again"
+            logger.error("404 Error", response.data)
+            speak_output = "Error 404 " + data[prompts.ERROR_404]
+            return speak_output
         elif response.status >= 400:
-            print(f"{response.status} Error", response.data) ## Add proper logging
-            return "Could not communicate with home assistant. Please check the Amazon \
-                    CloudWatch logs in the custom skill developer console."
+            logger.error("{response.status} Error", response.data)
+            speak_output = "Error {response.status} " + data[prompts.ERROR_400]
+            return speak_output
 
         return None
 
@@ -141,8 +143,10 @@ class HomeAssistant(Borg):
         if error:
             return error
         
+        data = self.handler_input.attributes_manager.request_attributes["_"]
+        speak_output = data[prompts.OKAY]
         self._clear_state()
-        return "Okay"
+        return speak_output
 
     def get_value_for_slot(self, slot_name):
         """"Get value from slot, also know as the (why does amazon make you do this)"""
@@ -233,7 +237,8 @@ class SelectIntentHandler(AbstractRequestHandler):
         selection  = home_assistant_object.get_value_for_slot("Selections")
         if selection:
             home_assistant_object.post_ha_event(selection, RESPONSE_SELECT)
-            speak_output = "You selected " + selection
+            data = handler_input.attributes_manager.request_attributes["_"]
+            speak_output = data[prompts.SELECTED].format(selection)
         else:
             raise
 
@@ -275,7 +280,8 @@ class DateTimeIntentHandler(AbstractRequestHandler):
         if not dates and not times:
             raise
         
-        speak_output = "Sorry, I can not do specific dates right now, try a duration instead, like... in 5 hours"
+        data = handler_input.attributes_manager.request_attributes["_"]
+        speak_output = data[prompts.ERROR_SPECIFIC_DATE]
 
         return (
             handler_input.response_builder
@@ -293,7 +299,8 @@ class CancelOrStopIntentHandler(AbstractRequestHandler):
 
     def handle(self, handler_input):
         print("CancelOrStopIntentHandler")
-        speak_output = "Goodbye!"
+        data = handler_input.attributes_manager.request_attributes["_"]
+        speak_output = data[prompts.STOP_MESSAGE]
 
         return (
             handler_input.response_builder
@@ -347,20 +354,41 @@ class CatchAllExceptionHandler(AbstractExceptionHandler):
         logger.error(exception, exc_info=True)
         home_assistant_object = HomeAssistant()      
         
+        data = handler_input.attributes_manager.request_attributes["_"]
         if hasattr(home_assistant_object, 'ha_state') and home_assistant_object.ha_state != None and 'text' in home_assistant_object.ha_state:
+            speak_output = data[prompts.ERROR_ACOUSTIC].format(home_assistant_object.ha_state['text'])
             return (
                 handler_input.response_builder
-                    .speak("Sorry I did not catch that... <break time='200ms'/> " + home_assistant_object.ha_state['text'])
+                    .speak(speak_output)
                     .ask('')
                     .response
             )
         else:
+            speak_output = data[prompts.ERROR_CONFIG].format(home_assistant_object.ha_state['text'])
             return (
                 handler_input.response_builder
-                    .speak("Sorry, I am having trouble, please check your configuration, in the custom skill and try again.")
+                    .speak(speak_output)
                     .response
             )
 
+class LocalizationInterceptor(AbstractRequestInterceptor):
+    """Add function to request attributes, that can load locale specific data."""
+    
+    def process(self, handler_input):
+        locale = handler_input.request_envelope.request.locale
+        logger.info("Locale is {}".format(locale[:2]))
+
+        # localized strings stored in language_strings.json
+        with open("language_strings.json") as language_prompts:
+            language_data = json.load(language_prompts)
+        # set default translation data to broader translation
+        data = language_data[locale[:2]]
+        # if a more specialized translation exists, then select it instead
+        # example: "fr-CA" will pick "fr" translations first, but if "fr-CA" translation exists,
+    #          then pick that instead
+        if locale in language_data:
+            data.update(language_data[locale])
+        handler_input.attributes_manager.request_attributes["_"] = data
 
 # The SkillBuilder object acts as the entry point for your skill, routing all request and response
 # payloads to the handlers above. Make sure any new handlers or interceptors you've
@@ -368,6 +396,7 @@ class CatchAllExceptionHandler(AbstractExceptionHandler):
 
 sb = SkillBuilder()
 
+# register request / intent handlers
 sb.add_request_handler(LaunchRequestHandler())
 sb.add_request_handler(YesIntentHanlder())
 sb.add_request_handler(NoIntentHanlder())
@@ -377,8 +406,12 @@ sb.add_request_handler(DurationIntentHandler())
 sb.add_request_handler(DateTimeIntentHandler())
 sb.add_request_handler(CancelOrStopIntentHandler())
 sb.add_request_handler(SessionEndedRequestHandler())
+sb.add_request_handler(IntentReflectorHandler())
 
-sb.add_request_handler(IntentReflectorHandler()) 
+# register exception handlers
 sb.add_exception_handler(CatchAllExceptionHandler())
+
+# register response interceptors
+sb.add_global_request_interceptor(LocalizationInterceptor())
 
 lambda_handler = sb.lambda_handler()
