@@ -1,4 +1,4 @@
-## VERSION 0.8.1
+## VERSION 0.8.2
 
 # UPDATE THESE VARIABLES WITH YOUR CONFIG
 HOME_ASSISTANT_URL                = 'https://yourhainstall.com'       # REPLACE WITH THE URL FOR YOUR HA FRONTEND
@@ -19,8 +19,10 @@ from ask_sdk_core.dispatch_components import AbstractRequestHandler
 from ask_sdk_core.dispatch_components import AbstractExceptionHandler
 from ask_sdk_core.dispatch_components import AbstractRequestInterceptor
 from ask_sdk_core.handler_input import HandlerInput
+from ask_sdk_model import SessionEndedReason
 from ask_sdk_model.slu.entityresolution import StatusCode
 from ask_sdk_model import Response
+
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -46,14 +48,14 @@ class HomeAssistant(Borg):
     """HomeAssistant Wrapper Class."""
     def __init__(self, handler_input=None):
         Borg.__init__(self)
-        if handler_input: 
+        if handler_input:
             self.handler_input = handler_input
 
         self.token = self._fetch_token() if TOKEN == "" else TOKEN
-        
+
         if not hasattr(self, 'ha_state') or self.ha_state is None:
             self.get_ha_state()
-    
+
     def _clear_state(self):
         self.ha_state = None
 
@@ -79,14 +81,14 @@ class HomeAssistant(Borg):
 
     def get_ha_state(self):
         """Get State from HA."""
-        
+
         http = urllib3.PoolManager(
             cert_reqs='CERT_REQUIRED' if VERIFY_SSL else 'CERT_NONE',
             timeout=urllib3.Timeout(connect=10.0, read=10.0)
         )
 
         response = http.request(
-            'GET', 
+            'GET',
             '{}/api/states/{}'.format(HOME_ASSISTANT_URL, INPUT_TEXT_ENTITY),
             headers={
                 'Authorization': 'Bearer {}'.format(self.token),
@@ -102,16 +104,16 @@ class HomeAssistant(Borg):
             }
 
         decoded_response = json.loads(response.data.decode('utf-8'))['state']
-        
+
         self.ha_state = {
             "error": False,
             "event_id": json.loads(decoded_response)['event'],
             "text": json.loads(decoded_response)['text']
         }
-        
+
     def post_ha_event(self, response: str, response_type: str, **kwargs):
         """Send event to HA."""
-        
+
         http = urllib3.PoolManager(
             cert_reqs='CERT_REQUIRED' if VERIFY_SSL else 'CERT_NONE',
             timeout=urllib3.Timeout(connect=10.0, read=10.0)
@@ -123,13 +125,13 @@ class HomeAssistant(Borg):
             "event_response_type": response_type
         }
         request_body.update(kwargs)
-        
+
         if self.handler_input.request_envelope.context.system.person:
             person_id = self.handler_input.request_envelope.context.system.person.person_id
             request_body['event_person_id'] = person_id
-            
+
         response = http.request(
-            'POST', 
+            'POST',
             '{}/api/events/alexa_actionable_notification'.format(HOME_ASSISTANT_URL),
             headers={
                 'Authorization': 'Bearer {}'.format(self.token),
@@ -137,12 +139,12 @@ class HomeAssistant(Borg):
             },
             body=json.dumps(request_body).encode('utf-8')
         )
-        
+
         error = self._check_response_errors(response)
 
         if error:
             return error
-        
+
         data = self.handler_input.attributes_manager.request_attributes["_"]
         speak_output = data[prompts.OKAY]
         self._clear_state()
@@ -166,7 +168,7 @@ class LaunchRequestHandler(AbstractRequestHandler):
 
     def handle(self, handler_input):
         home_assistant_object = HomeAssistant(handler_input)
-        speak_output = home_assistant_object.ha_state['text'] 
+        speak_output = home_assistant_object.ha_state['text']
 
         return (
             handler_input.response_builder
@@ -199,7 +201,7 @@ class NoIntentHanlder(AbstractRequestHandler):
 
     def handle(self, handler_input):
         home_assistant_object = HomeAssistant(handler_input)
-        speak_output = home_assistant_object.post_ha_event(RESPONSE_NO, RESPONSE_NO)   
+        speak_output = home_assistant_object.post_ha_event(RESPONSE_NO, RESPONSE_NO)
 
         return (
             handler_input.response_builder
@@ -273,13 +275,13 @@ class DateTimeIntentHandler(AbstractRequestHandler):
 
     def handle(self, handler_input):
         home_assistant_object = HomeAssistant(handler_input)
-        
+
         dates = ask_utils.get_slot_value(handler_input, "Dates")
         times = ask_utils.get_slot_value(handler_input, "Times")
-        
+
         if not dates and not times:
             raise
-        
+
         data = handler_input.attributes_manager.request_attributes["_"]
         speak_output = data[prompts.ERROR_SPECIFIC_DATE]
 
@@ -315,8 +317,9 @@ class SessionEndedRequestHandler(AbstractRequestHandler):
         return ask_utils.is_request_type("SessionEndedRequest")(handler_input)
 
     def handle(self, handler_input):
-        home_assistant_object = HomeAssistant()
-        speak_output = home_assistant_object.post_ha_event(RESPONSE_NONE, RESPONSE_NONE)
+        home_assistant_object = HomeAssistant(handler_input)
+        if handler_input.request_envelope.request.reason == SessionEndedReason.EXCEEDED_MAX_REPROMPTS:
+            home_assistant_object.post_ha_event(RESPONSE_NONE, RESPONSE_NONE)
 
         return handler_input.response_builder.response
 
@@ -352,8 +355,8 @@ class CatchAllExceptionHandler(AbstractExceptionHandler):
     def handle(self, handler_input, exception):
         print("CatchAllExceptionHandler")
         logger.error(exception, exc_info=True)
-        home_assistant_object = HomeAssistant()      
-        
+        home_assistant_object = HomeAssistant()
+
         data = handler_input.attributes_manager.request_attributes["_"]
         if hasattr(home_assistant_object, 'ha_state') and home_assistant_object.ha_state != None and 'text' in home_assistant_object.ha_state:
             speak_output = data[prompts.ERROR_ACOUSTIC].format(home_assistant_object.ha_state['text'])
@@ -373,7 +376,7 @@ class CatchAllExceptionHandler(AbstractExceptionHandler):
 
 class LocalizationInterceptor(AbstractRequestInterceptor):
     """Add function to request attributes, that can load locale specific data."""
-    
+
     def process(self, handler_input):
         locale = handler_input.request_envelope.request.locale
         logger.info("Locale is {}".format(locale[:2]))
