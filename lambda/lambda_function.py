@@ -27,6 +27,7 @@ from ask_sdk_model import Response
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
+HOME_ASSISTANT_URL = HOME_ASSISTANT_URL.rstrip('/')
 
 INPUT_TEXT_ENTITY = "input_text.alexa_actionable_notification"
 
