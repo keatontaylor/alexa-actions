@@ -1,18 +1,32 @@
 {
-	"en": {
-	    "ERROR_401": "It looks like I am unauthorized to reach home assistant, please check your account linking or your long lived access token and try again",
-		"ERROR_404": "It looks like I may not be able to find the input text entity. Please check that you've added it to home assistant and try again",
-		"ERROR_400": "Could not communicate with home assistant. Please check the Amazon CloudWatch logs in the custom skill developer console.",
-	    "ERROR_ACOUSTIC": "Sorry I did not catch that... <break time='200ms'/> {}",
-		"ERROR_CONFIG": "Sorry, I am having trouble, please check your configuration, in the custom skill and try again.",
-		"ERROR_SPECIFIC_DATE": "Sorry, I can not do specific dates right now, try a duration instead, like... in 5 hours",
-		"HELP_MESSAGE": "This skill should be only reactively while triggered via home assistant.",
-		"OKAY": "Okay",
-		"SKILL_NAME": "home assistant custom actions",
-		"STOP_MESSAGE": "Goodbye!",
-		"SELECTED" : "You selected {}",
-		"WELCOME_MESSAGE": "Welcome to {}. Input text is: {}"
-	},
+     "es": {
+          "ERROR_401": "Pparece que no estoy autorizada para llegar a home assistant, por favor verifica el enlace a la cuenta o el token de larga duración e intentalo de nuevo",
+          "ERROR_404": "Parece que no puedo encontrar la entidad de entrada de texto.Por favor, verifica que lo has añadido a home assistant e intentalo de nuevo",
+          "ERROR_400": "No puedo comunicarme con Home Assistant. Por favor, verifica los logs de Amazon CloudWatch logs de la skill en la consola de desarrollo.",
+          "ERROR_ACOUSTIC": "Lo siento, no te he entendido... <break time='200ms'/> {}",
+          "ERROR_CONFIG": "Lo siento, estoy teniendo problemas, por favor comprueba la configuractión de la skill e intentalo de nuevo.",
+          "ERROR_SPECIFIC_DATE": "Lo siento, no puedo usar fechas específicas ahora mismo, intenta usar la duración, por ejemplo... en 5 horas",
+          "HELP_MESSAGE": "Esta skill solo reacciona si se activa desde home assistant.",
+          "OKAY": "Okay",
+          "SKILL_NAME": "home assistant custom actions",
+          "STOP_MESSAGE": "Hasta luego!",
+          "SELECTED" : "Has seleccionado {}",
+          "WELCOME_MESSAGE": "Bienvenido {}. El texto introducido es: {}"
+     },
+     "en": {
+          "ERROR_401": "It looks like I am unauthorized to reach home assistant, please check your account linking or your long lived access token and try again",
+          "ERROR_404": "It looks like I may not be able to find the input text entity. Please check that you've added it to home assistant and try again",
+          "ERROR_400": "Could not communicate with home assistant. Please check the Amazon CloudWatch logs in the custom skill developer console.",
+          "ERROR_ACOUSTIC": "Sorry I did not catch that... <break time='200ms'/> {}",
+          "ERROR_CONFIG": "Sorry, I am having trouble, please check your configuration, in the custom skill and try again.",
+          "ERROR_SPECIFIC_DATE": "Sorry, I can not do specific dates right now, try a duration instead, like... in 5 hours",
+          "HELP_MESSAGE": "This skill should be only reactively while triggered via home assistant.",
+          "OKAY": "Okay",
+          "SKILL_NAME": "home assistant custom actions",
+          "STOP_MESSAGE": "Goodbye!",
+          "SELECTED" : "You selected {}",
+          "WELCOME_MESSAGE": "Welcome to {}. Input text is: {}"
+     },
 	"de": {
 	    "ERROR_401": "Ich habe scheinbar keine Berechtigungen für die verbindung zu home assistant. Bitte prüfe deinen H A Benutzer oder Access Token.",
 		"ERROR_404": "Ich kann kein input text Objekt in home assistant finden. Bitte überprüfe ob du dieses bereits hinzugefügt hast.",
