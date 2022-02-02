@@ -33,6 +33,7 @@ INPUT_TEXT_ENTITY = "input_text.alexa_actionable_notification"
 RESPONSE_YES = "ResponseYes"
 RESPONSE_NO = "ResponseNo"
 RESPONSE_NONE = "ResponseNone"
+RESPONSE_STRING = "ResponseString"
 RESPONSE_SELECT = "ResponseSelect"
 RESPONSE_NUMERIC = "ResponseNumeric"
 RESPONSE_DURATION = "ResponseDuration"
@@ -53,8 +54,8 @@ class HomeAssistant(Borg):
 
         self.token = self._fetch_token() if TOKEN == "" else TOKEN
 
-        if not hasattr(self, 'ha_state') or self.ha_state is None:
-            self.get_ha_state()
+#        if not hasattr(self, 'ha_state') or self.ha_state is None: # Fix from @paoloantinori on Issue #75
+        self.get_ha_state()
 
     def _clear_state(self):
         self.ha_state = None
@@ -104,6 +105,7 @@ class HomeAssistant(Borg):
             }
 
         decoded_response = json.loads(response.data.decode('utf-8'))['state']
+        decoded_response = decoded_response.replace("'",'"') # stolen from @meauxt fork. Does not help, but does not harm, too.
 
         self.ha_state = {
             "error": False,
@@ -221,6 +223,24 @@ class NumericIntentHandler(AbstractRequestHandler):
         if number == '?':
             raise
         speak_output = home_assistant_object.post_ha_event(number, RESPONSE_NUMERIC)
+
+        return (
+            handler_input.response_builder
+                .speak(speak_output)
+                .response
+        )
+
+
+class StringIntentHandler(AbstractRequestHandler):
+    """Handler for String Intent."""
+    def can_handle(self, handler_input):
+        return ask_utils.is_intent_name("String")(handler_input)
+
+    def handle(self, handler_input):
+        home_assistant_object = HomeAssistant(handler_input)
+        strings  = ask_utils.get_slot_value(handler_input, "Strings")
+
+        speak_output = home_assistant_object.post_ha_event(strings, RESPONSE_STRING)
 
         return (
             handler_input.response_builder
@@ -403,6 +423,7 @@ sb = SkillBuilder()
 sb.add_request_handler(LaunchRequestHandler())
 sb.add_request_handler(YesIntentHanlder())
 sb.add_request_handler(NoIntentHanlder())
+sb.add_request_handler(StringIntentHandler())
 sb.add_request_handler(SelectIntentHandler())
 sb.add_request_handler(NumericIntentHandler())
 sb.add_request_handler(DurationIntentHandler())
