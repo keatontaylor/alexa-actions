@@ -15,7 +15,6 @@ import json
 import isodate
 import prompts
 from typing import Union, Optional
-from datetime import datetime
 from urllib3 import HTTPResponse
 
 from ask_sdk_core.utils import (
@@ -30,10 +29,8 @@ from ask_sdk_core.skill_builder import SkillBuilder
 from ask_sdk_core.dispatch_components import AbstractRequestHandler
 from ask_sdk_core.dispatch_components import AbstractExceptionHandler
 from ask_sdk_core.dispatch_components import AbstractRequestInterceptor
-from ask_sdk_core.handler_input import HandlerInput
 from ask_sdk_model import SessionEndedReason
 from ask_sdk_model.slu.entityresolution import StatusCode
-from ask_sdk_model import Response
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler(sys.stdout))
