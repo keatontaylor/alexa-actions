@@ -76,6 +76,10 @@ class HomeAssistant(Borg):
             self.get_ha_state()
 
     def clear_state(self):
+        """
+            Clear the state of the local Home Assistant object.
+        """
+
         logger.debug("Clearing Home Assistant local state")
         self.ha_state = None
 
@@ -100,7 +104,10 @@ class HomeAssistant(Borg):
         return False
 
     def get_ha_state(self) -> None:
-        """Get State from HA."""
+        """
+            Updates the local Home Assistant state with the
+            latest state from the Home Assistant server.
+        """
 
         http = urllib3.PoolManager(
             cert_reqs='CERT_REQUIRED' if VERIFY_SSL else 'CERT_NONE',
@@ -144,7 +151,14 @@ class HomeAssistant(Borg):
         logger.debug(self.ha_state)
 
     def post_ha_event(self, response: str, response_type: str, **kwargs) -> str:
-        """Send event to HA."""
+        """
+            Posts an event to the Home Assistant server.
+
+            :param response: The response to send to the Home Assistant server.
+            :param response_type: The type of response to send to the Home Assistant server.
+            :param kwargs: Additional parameters to send to the Home Assistant server.
+            :return: The text to speak to the user.
+        """
 
         http = urllib3.PoolManager(
             cert_reqs='CERT_REQUIRED' if VERIFY_SSL else 'CERT_NONE',
