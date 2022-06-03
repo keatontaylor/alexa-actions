@@ -89,16 +89,20 @@ class HomeAssistant(Borg):
 
     def _check_response_errors(self, response: HTTPResponse) -> Union[bool, str]:
         if response.status == 401:
-            logger.error('401 Error', response.data)
+            logger.error(f'401 Error from Home Assistant. Activate debug mode to see more details.')
+            logger.debug(response.data)
             speak_output = "Error 401 " + self.language_strings[prompts.ERROR_401]
             return speak_output
-        elif response.status == 404:
-            logger.error('404 Error', response.data)
+        if response.status == 404:
+            logger.error(f'404 Error from Home Assistant. Activate debug mode to see more details.')
+            logger.debug(response.data)
             speak_output = "Error 404 " + self.language_strings[prompts.ERROR_404]
             return speak_output
-        elif response.status >= 400:
-            logger.error('{response.status} Error', response.data)
-            speak_output = "Error {response.status} " + self.language_strings[prompts.ERROR_400]
+        if response.status >= 400:
+            logger.error(f'{response.status} Error from Home Assistant. '
+                         f'Activate debug mode to see more details.')
+            logger.debug(response.data)
+            speak_output = f'Error {response.status}, {self.language_strings[prompts.ERROR_400]}'
             return speak_output
 
         return False
@@ -209,12 +213,14 @@ class LaunchRequestHandler(AbstractRequestHandler):
     """Handler for Skill Launch."""
 
     def can_handle(self, handler_input):
+        """Check for Launch Request."""
         return is_request_type('LaunchRequest')(handler_input)
 
     def handle(self, handler_input):
-        ha = HomeAssistant(handler_input)
-        speak_output: Optional[str] = ha.ha_state['text']
-        event_id: Optional[str] = ha.ha_state['event_id']
+        """Handler for Skill Launch."""
+        ha_obj = HomeAssistant(handler_input)
+        speak_output: Optional[str] = ha_obj.ha_state['text']
+        event_id: Optional[str] = ha_obj.ha_state['event_id']
 
         if event_id:
             return (
@@ -224,7 +230,7 @@ class LaunchRequestHandler(AbstractRequestHandler):
                     .response
             )
         else:
-            ha.clear_state()
+            ha_obj.clear_state()
             return (
                 handler_input.response_builder
                     .speak(speak_output)
@@ -236,12 +242,14 @@ class YesIntentHanlder(AbstractRequestHandler):
     """Handler for Yes Intent."""
 
     def can_handle(self, handler_input):
+        """Check for Yes Intent."""
         return is_intent_name('AMAZON.YesIntent')(handler_input)
 
     def handle(self, handler_input):
+        """Handle Yes Intent."""
         logger.info('Yes Intent Handler triggered')
-        ha = HomeAssistant(handler_input)
-        speak_output = ha.post_ha_event(RESPONSE_YES, RESPONSE_YES)
+        ha_obj = HomeAssistant(handler_input)
+        speak_output = ha_obj.post_ha_event(RESPONSE_YES, RESPONSE_YES)
 
         return (
             handler_input.response_builder
@@ -254,12 +262,14 @@ class NoIntentHanlder(AbstractRequestHandler):
     """Handler for No Intent."""
 
     def can_handle(self, handler_input):
+        """Check for No Intent."""
         return is_intent_name('AMAZON.NoIntent')(handler_input)
 
     def handle(self, handler_input):
+        """Handle No Intent."""
         logger.info('No Intent Handler triggered')
-        ha = HomeAssistant(handler_input)
-        speak_output = ha.post_ha_event(RESPONSE_NO, RESPONSE_NO)
+        ha_obj = HomeAssistant(handler_input)
+        speak_output = ha_obj.post_ha_event(RESPONSE_NO, RESPONSE_NO)
 
         return (
             handler_input.response_builder
@@ -272,16 +282,18 @@ class NumericIntentHandler(AbstractRequestHandler):
     """Handler for Select Intent."""
 
     def can_handle(self, handler_input):
+        """Check for Select Intent."""
         return is_intent_name('Number')(handler_input)
 
     def handle(self, handler_input):
+        """Handle the Select intent."""
         logger.info('Numeric Intent Handler triggered')
-        ha = HomeAssistant(handler_input)
+        ha_obj = HomeAssistant(handler_input)
         number = get_slot_value(handler_input, 'Numbers')
         logger.debug(f'Number: {number}')
         if number == '?':
             raise
-        speak_output = ha.post_ha_event(number, RESPONSE_NUMERIC)
+        speak_output = ha_obj.post_ha_event(number, RESPONSE_NUMERIC)
 
         return (
             handler_input.response_builder
@@ -294,18 +306,20 @@ class SelectIntentHandler(AbstractRequestHandler):
     """Handler for Select Intent."""
 
     def can_handle(self, handler_input):
+        """Check for Select Intent."""
         return is_intent_name('Select')(handler_input)
 
     def handle(self, handler_input):
+        """Handle Select Intent."""
         logger.info('Selection Intent Handler triggered')
-        ha = HomeAssistant(handler_input)
-        selection = ha.get_value_for_slot('Selections')
+        ha_obj = HomeAssistant(handler_input)
+        selection = ha_obj.get_value_for_slot('Selections')
         logger.debug(f'Selection: {selection}')
 
         if not selection:
             raise
 
-        ha.post_ha_event(selection, RESPONSE_SELECT)
+        ha_obj.post_ha_event(selection, RESPONSE_SELECT)
         data = handler_input.attributes_manager.request_attributes["_"]
         speak_output = data[prompts.SELECTED].format(selection)
 
@@ -317,19 +331,21 @@ class SelectIntentHandler(AbstractRequestHandler):
 
 
 class DurationIntentHandler(AbstractRequestHandler):
-    """Handler for Select Intent."""
+    """Handler for Duration Intent."""
 
     def can_handle(self, handler_input):
+        """Check for Duration Intent."""
         return is_intent_name('Duration')(handler_input)
 
     def handle(self, handler_input):
+        """Handle the Duration Intent."""
         logger.info('Duration Intent Handler triggered')
-        ha = HomeAssistant(handler_input)
+        ha_obj = HomeAssistant(handler_input)
         duration = get_slot_value(handler_input, 'Durations')
 
         logger.debug(f'Duration: {duration}')
 
-        speak_output = ha.post_ha_event(
+        speak_output = ha_obj.post_ha_event(
             isodate.parse_duration(duration).total_seconds(), RESPONSE_DURATION)
 
         return (
@@ -340,14 +356,15 @@ class DurationIntentHandler(AbstractRequestHandler):
 
 
 class DateTimeIntentHandler(AbstractRequestHandler):
-    """Handler for Select Intent."""
+    """Handler for Date Time Intent."""
 
     def can_handle(self, handler_input):
+        """Check for Date Time Intent."""
         return is_intent_name('Date')(handler_input)
 
     def handle(self, handler_input):
+        """Handle the Date Time intent."""
         logger.info('Date Intent Handler triggered')
-        ha = HomeAssistant(handler_input)
 
         dates = get_slot_value(handler_input, 'Dates')
         times = get_slot_value(handler_input, 'Times')
@@ -373,10 +390,12 @@ class CancelOrStopIntentHandler(AbstractRequestHandler):
     """Single handler for Cancel and Stop Intent."""
 
     def can_handle(self, handler_input):
+        """Check for Cancel and Stop Intent."""
         return (is_intent_name('AMAZON.CancelIntent')(handler_input) or
                 is_intent_name('AMAZON.StopIntent')(handler_input))
 
     def handle(self, handler_input):
+        """Handle Cancel and Stop Intent."""
         logger.info('Cancel or Stop Intent Handler triggered')
         data = handler_input.attributes_manager.request_attributes["_"]
         speak_output = data[prompts.STOP_MESSAGE]
@@ -392,13 +411,16 @@ class SessionEndedRequestHandler(AbstractRequestHandler):
     """Handler for Session End."""
 
     def can_handle(self, handler_input):
+        """Check for Session End."""
         return is_request_type('SessionEndedRequest')(handler_input)
 
     def handle(self, handler_input):
+        """Clean up and stop the skill."""
         logger.info('Session Ended Request Handler triggered')
-        ha = HomeAssistant(handler_input)
-        if handler_input.request_envelope.request.reason == SessionEndedReason.EXCEEDED_MAX_REPROMPTS:
-            ha.post_ha_event(RESPONSE_NONE, RESPONSE_NONE)
+        ha_obj = HomeAssistant(handler_input)
+        reason = handler_input.request_envelope.request.reason
+        if reason == SessionEndedReason.EXCEEDED_MAX_REPROMPTS:
+            ha_obj.post_ha_event(RESPONSE_NONE, RESPONSE_NONE)
 
         return handler_input.response_builder.response
 
@@ -411,9 +433,11 @@ class IntentReflectorHandler(AbstractRequestHandler):
     """
 
     def can_handle(self, handler_input):
+        """Check if can handle IntentReflectorHandler."""
         return is_request_type('IntentRequest')(handler_input)
 
     def handle(self, handler_input):
+        """Simulate an intent."""
         logger.info('Reflector Intent triggered')
         intent_name = get_intent_name(handler_input)
         speak_output = "You just triggered " + intent_name + "."
@@ -433,23 +457,25 @@ class CatchAllExceptionHandler(AbstractExceptionHandler):
     """
 
     def can_handle(self, handler_input, exception):
+        """Check if can handle exception."""
         return True
 
     def handle(self, handler_input, exception):
+        """Handle exception."""
         logger.info('Catch All Exception triggered')
         logger.error(exception, exc_info=True)
-        ha = HomeAssistant()
+        ha_obj = HomeAssistant()
 
         data = handler_input.attributes_manager.request_attributes["_"]
-        if ha.ha_state and ha.ha_state.get('text'):
-            speak_output = data[prompts.ERROR_ACOUSTIC].format(ha.ha_state.get('text'))
+        if ha_obj.ha_state and ha_obj.ha_state.get('text'):
+            speak_output = data[prompts.ERROR_ACOUSTIC].format(ha_obj.ha_state.get('text'))
             return (
                 handler_input.response_builder
                     .speak(speak_output)
                     .ask('')
                     .response
             )
-        speak_output = data[prompts.ERROR_CONFIG].format(ha.ha_state.get('text'))
+        speak_output = data[prompts.ERROR_CONFIG].format(ha_obj.ha_state.get('text'))
         return (
             handler_input.response_builder
                 .speak(speak_output)
@@ -461,11 +487,12 @@ class LocalizationInterceptor(AbstractRequestInterceptor):
     """Add function to request attributes, that can load locale specific data."""
 
     def process(self, handler_input):
+        """Load locale specific data."""
         locale = handler_input.request_envelope.request.locale
         logger.info(f'Locale is {locale[:2]}')
 
         # localized strings stored in language_strings.json
-        with open('language_strings.json') as language_prompts:
+        with open('language_strings.json', encoding='utf-8') as language_prompts:
             language_data = json.load(language_prompts)
         # set default translation data to broader translation
         data = language_data[locale[:2]]
