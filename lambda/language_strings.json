@@ -36,9 +36,12 @@
 		"ERROR_SPECIFIC_DATE": "Desculpe, não consigo lidar com datas específicas por enquanto. <break time='500ms'/> Tente dizer um intervalo de tempo, por exemplo... <break time='200ms'/> em 5 horas",
 		"HELP_MESSAGE": "Essa habilidade deve ser acionada reativamente quando invocada pelo Home Assistant.",
 		"OKAY": "Tudo bem",
-		"SKILL_NAME": "ações personalizadas",
+		"SKILL_NAME": "home Assistant, ações customizadas",
 		"STOP_MESSAGE": "Tchau!",
 		"SELECTED": "Você escolheu {}",
 		"WELCOME_MESSAGE": "Bem vindo ao {}. A entrada de texto é: {}"
+	},
+	"pt-BR": {
+		"SKILL_NAME": "home Assistant, ações customizadas"
 	}
 }
