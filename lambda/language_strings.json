@@ -27,6 +27,26 @@
 		"STOP_MESSAGE": "Machs gut!",
 		"WELCOME_MESSAGE": "Willkommen bei {}. Der input text ist: {}"
 	},
+	"fr": {
+		"ERROR_401": "Il semblerait que je ne sois pas authorisée à accéder à home assistant, veuillez verifier la liaison de compte ou le token d'accès longue durée et essayez à nouveau.",
+		"ERROR_404": "Il semblerait que je ne sois pas capable de trouver l'entité champ texte. Veuillez verifier que vous l'avez bien ajouté à home assistant et essayez à nouveau.",
+		"ERROR_400": "Impossible de communiquer avec home assistant. Veuillez verifier les logs Amazon CloudWAtch dans la console de développement de votre skill personnalisé.",
+		"ERROR_ACOUSTIC": "Désolé je n'ai pas compris... <break time='200ms'/> {}.",
+		"ERROR_CONFIG": "Désolé, j'ai quelques problèmes, veuillez verifier votre configuration dans votre skill personnalisé et essayez à nouveau.",
+		"ERROR_SPECIFIC_DATE": "Désolé, je ne peux pas gérer de date specifiques pour le moment. Essayez plutôt avec une période comme par exemple... dans 5 heures",
+		"HELP_MESSAGE": "Cette skill ne devrait être seulement réactive que depuis un appel de home assistant",
+		"OKAY": "Okay",
+		"SKILL_NAME": "home assistant custom actions",
+		"STOP_MESSAGE": "Au revoir!",
+		"SELECTED": "Vous avez choisi {}",
+		"WELCOME_MESSAGE": "Bienvenue sur {}. Le champ texte est: {}"
+  },
+  "ft-FR": {
+    "SKILL_NAME": "home assistant custom actions"
+  },
+  "fr-CA": {
+    "SKILL_NAME": "home assistant custom actions"
+  },
 	"it": {
 	    "ERROR_401": "Problema con le autorizzazioni di accesso ad Home Assistant: controllare l'account collegato o eventuali token utilizzati e riprovare",
 		"ERROR_404": "Impossibile accedere all'input_text. Controllare di averlo aggiunto correttamente ad Home Assistant come indicato nelle istruzioni e riprovare",
