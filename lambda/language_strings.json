@@ -40,5 +40,25 @@
 		"STOP_MESSAGE": "A presto!",
 		"SELECTED" : "Hai selezionato {}",
 		"WELCOME_MESSAGE": "Benvenuto su {}. Il testo specificato e': {}"
+  },
+  "it-IT": {
+    "SKILL_NAME": "Home Assistant Austom Actions"
+  },
+	"pt": {
+		"ERROR_401": "Parece que eu não estou autorizada a acessar seu Home Assistant. Verifique as credenciais e tente novamente.",
+		"ERROR_404": "Parece que você não configurou a entidade de entrada de texto corretamente. Verifique se ela está disponível e tente novamente",
+		"ERROR_400": "Não consigo me conectar ao Home Assistant. Por favor, cheque os registros no painel de desenvolvimento desta minha habilidade.",
+		"ERROR_ACOUSTIC": "Desculpe, não entendi... <break time='200ms'/> {}",
+		"ERROR_CONFIG": "Desculpe, estou com problemas. Por favor, cheque suas configurações nesta minha habilidade e tente novamente.",
+		"ERROR_SPECIFIC_DATE": "Desculpe, não consigo lidar com datas específicas por enquanto. <break time='500ms'/> Tente dizer um intervalo de tempo, por exemplo... <break time='200ms'/> em 5 horas",
+		"HELP_MESSAGE": "Essa habilidade deve ser acionada reativamente quando invocada pelo Home Assistant.",
+		"OKAY": "Tudo bem",
+		"SKILL_NAME": "home Assistant, ações customizadas",
+		"STOP_MESSAGE": "Tchau!",
+		"SELECTED": "Você escolheu {}",
+		"WELCOME_MESSAGE": "Bem vindo ao {}. A entrada de texto é: {}"
+	},
+	"pt-BR": {
+		"SKILL_NAME": "home Assistant, ações customizadas"
 	}
 }
