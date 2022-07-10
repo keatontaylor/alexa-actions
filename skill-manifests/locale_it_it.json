@@ -1,0 +1,122 @@
+{
+    "interactionModel": {
+        "languageModel": {
+            "invocationName": "custom actions",
+            "intents": [
+                {
+                    "name": "AMAZON.CancelIntent",
+                    "samples": []
+                },
+                {
+                    "name": "AMAZON.HelpIntent",
+                    "samples": []
+                },
+                {
+                    "name": "AMAZON.StopIntent",
+                    "samples": []
+                },
+                {
+                    "name": "AMAZON.NavigateHomeIntent",
+                    "samples": []
+                },
+                {
+                    "name": "AMAZON.YesIntent",
+                    "samples": [
+                        "yes"
+                    ]
+                },
+                {
+                    "name": "AMAZON.NoIntent",
+                    "samples": [
+                        "no"
+                    ]
+                },
+                {
+                    "name": "Select",
+                    "slots": [
+                        {
+                            "name": "Selections",
+                            "type": "Selections"
+                        }
+                    ],
+                    "samples": [
+                        "{Selections}"
+                    ]
+                },
+                {
+                    "name": "Number",
+                    "slots": [
+                        {
+                            "name": "Numbers",
+                            "type": "AMAZON.FOUR_DIGIT_NUMBER"
+                        }
+                    ],
+                    "samples": [
+                        "{Numbers}"
+                    ]
+                },
+                {
+                    "name": "Duration",
+                    "slots": [
+                        {
+                            "name": "Durations",
+                            "type": "AMAZON.DURATION"
+                        }
+                    ],
+                    "samples": [
+                        "{Durations}"
+                    ]
+                },
+                {
+                    "name": "Date",
+                    "slots": [
+                        {
+                            "name": "Dates",
+                            "type": "AMAZON.DATE"
+                        },
+                        {
+                            "name": "Times",
+                            "type": "AMAZON.TIME"
+                        }
+                    ],
+                    "samples": [
+                        "{Dates} at {Times}",
+                        "at {Times}",
+                        "{Dates}"
+                    ]
+                }
+            ],
+            "types": [
+                {
+                    "name": "Selections",
+                    "values": [
+                        {
+                            "name": {
+                                "value": "Amazon Prime",
+                                "synonyms": [
+                                    "Amazon",
+                                    "Amazon Video"
+                                ]
+                            }
+                        },
+                        {
+                            "name": {
+                                "value": "Hulu"
+                            }
+                        },
+                        {
+                            "name": {
+                                "value": "YouTube"
+                            }
+                        },
+                        {
+                            "name": {
+                                "value": "Netflix"
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+    }
+}
