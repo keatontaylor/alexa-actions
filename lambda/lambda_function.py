@@ -32,6 +32,8 @@ from ask_sdk_core.dispatch_components import AbstractRequestInterceptor
 from ask_sdk_model import SessionEndedReason
 from ask_sdk_model.slu.entityresolution import StatusCode
 
+HOME_ASSISTANT_URL = HOME_ASSISTANT_URL.rstrip('/')
+
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler(sys.stdout))
 if DEBUG:
