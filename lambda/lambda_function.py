@@ -1,10 +1,11 @@
-## VERSION 0.8.2
+# VERSION 0.8.2
 
 # UPDATE THESE VARIABLES WITH YOUR CONFIG
-HOME_ASSISTANT_URL                = 'https://yourhainstall.com'       # REPLACE WITH THE URL FOR YOUR HA FRONTEND
-VERIFY_SSL                        = True                              # SET TO FALSE IF YOU DO NOT HAVE VALID CERTS
-TOKEN                             = ''                                # ADD YOUR LONG LIVED TOKEN IF NEEDED OTHERWISE LEAVE BLANK
-DEBUG = True  # SET TO TRUE IF YOU WANT TO SEE MORE DETAILS IN THE LOGS
+
+HOME_ASSISTANT_URL = 'https://yourinstall.com'  # REPLACE WITH THE URL FOR YOUR HOME ASSISTANT
+VERIFY_SSL = True  # SET TO FALSE IF YOU DO NOT HAVE VALID CERTS
+TOKEN = ''  # ADD YOUR LONG LIVED TOKEN IF NEEDED OTHERWISE LEAVE BLANK
+DEBUG = False  # SET TO TRUE IF YOU WANT TO SEE MORE DETAILS IN THE LOGS
 
 """ NO NEED TO EDIT ANYTHING UNDER THE LINE """
 import sys
@@ -31,6 +32,8 @@ from ask_sdk_core.dispatch_components import AbstractRequestInterceptor
 from ask_sdk_model import SessionEndedReason
 from ask_sdk_model.slu.entityresolution import StatusCode
 
+HOME_ASSISTANT_URL = HOME_ASSISTANT_URL.rstrip('/')
+
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler(sys.stdout))
 if DEBUG:
@@ -46,7 +49,6 @@ RESPONSE_NONE = "ResponseNone"
 RESPONSE_SELECT = "ResponseSelect"
 RESPONSE_NUMERIC = "ResponseNumeric"
 RESPONSE_DURATION = "ResponseDuration"
-RESPONSE_STRING = "ResponseString"
 
 
 class Borg:
@@ -72,7 +74,8 @@ class HomeAssistant(Borg):
 
         self.token = self._fetch_token() if TOKEN == "" else TOKEN
 
-        self.get_ha_state()
+        if not self.ha_state:
+            self.get_ha_state()
 
     def clear_state(self):
         """
@@ -237,12 +240,12 @@ class LaunchRequestHandler(AbstractRequestHandler):
             )
 
 
-class YesetentHanlder(AbstractRequestHandler):
+class YesIntentHanlder(AbstractRequestHandler):
     """Handler for Yes Intent."""
 
     def can_handle(self, handler_input):
         """Check for Yes Intent."""
-        return is_intent_name('AMAZON.Yesetent')(handler_input)
+        return is_intent_name('AMAZON.YesIntent')(handler_input)
 
     def handle(self, handler_input):
         """Handle Yes Intent."""
@@ -277,7 +280,7 @@ class NoIntentHanlder(AbstractRequestHandler):
         )
 
 
-class NumerictentHandler(AbstractRequestHandler):
+class NumericIntentHandler(AbstractRequestHandler):
     """Handler for Select Intent."""
 
     def can_handle(self, handler_input):
@@ -301,30 +304,7 @@ class NumerictentHandler(AbstractRequestHandler):
         )
 
 
-class StringIntentHandler(AbstractRequestHandler):
-    """Handler for String Intent."""
-    
-    def can_handle(self, handler_input):
-        """Check for Select Intent."""
-        return is_intent_name('String')(handler_input)
-
-    def handle(self, handler_input):
-        """Handle String Intent."""
-        logger.info('String Intent Handler triggered')
-        ha_obj = HomeAssistant(handler_input)
-        strings = get_slot_value(handler_input, 'Strings')
-        logger.debug(f'String: {strings}')
-
-        speak_output = ha_obj.post_ha_event(strings, RESPONSE_STRING)
-
-        return (
-            handler_input.response_builder
-                .speak(speak_output)
-                .response
-        )
-
-
-class SelecttentHandler(AbstractRequestHandler):
+class SelectIntentHandler(AbstractRequestHandler):
     """Handler for Select Intent."""
 
     def can_handle(self, handler_input):
@@ -352,7 +332,7 @@ class SelecttentHandler(AbstractRequestHandler):
         )
 
 
-class DurationtentHandler(AbstractRequestHandler):
+class DurationIntentHandler(AbstractRequestHandler):
     """Handler for Duration Intent."""
 
     def can_handle(self, handler_input):
@@ -408,13 +388,13 @@ class DateTimeIntentHandler(AbstractRequestHandler):
         )
 
 
-class CancelOrStoptentHandler(AbstractRequestHandler):
+class CancelOrStopIntentHandler(AbstractRequestHandler):
     """Single handler for Cancel and Stop Intent."""
 
     def can_handle(self, handler_input):
         """Check for Cancel and Stop Intent."""
-        return (is_intent_name('AMAZON.Canceltent')(handler_input) or
-                is_intent_name('AMAZON.Stoptent')(handler_input))
+        return (is_intent_name('AMAZON.CancelIntent')(handler_input) or
+                is_intent_name('AMAZON.StopIntent')(handler_input))
 
     def handle(self, handler_input):
         """Handle Cancel and Stop Intent."""
@@ -537,14 +517,13 @@ sb = SkillBuilder()
 
 # register request / intent handlers
 sb.add_request_handler(LaunchRequestHandler())
-sb.add_request_handler(YesetentHanlder())
+sb.add_request_handler(YesIntentHanlder())
 sb.add_request_handler(NoIntentHanlder())
-sb.add_request_handler(StringIntentHandler())
-sb.add_request_handler(SelecttentHandler())
-sb.add_request_handler(NumerictentHandler())
-sb.add_request_handler(DurationtentHandler())
+sb.add_request_handler(SelectIntentHandler())
+sb.add_request_handler(NumericIntentHandler())
+sb.add_request_handler(DurationIntentHandler())
 sb.add_request_handler(DateTimeIntentHandler())
-sb.add_request_handler(CancelOrStoptentHandler())
+sb.add_request_handler(CancelOrStopIntentHandler())
 sb.add_request_handler(SessionEndedRequestHandler())
 sb.add_request_handler(IntentReflectorHandler())
 
