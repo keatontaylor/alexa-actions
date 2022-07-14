@@ -49,6 +49,7 @@ RESPONSE_NONE = "ResponseNone"
 RESPONSE_SELECT = "ResponseSelect"
 RESPONSE_NUMERIC = "ResponseNumeric"
 RESPONSE_DURATION = "ResponseDuration"
+RESPONSE_STRING = "ResponseString"
 
 
 class Borg:
@@ -304,6 +305,7 @@ class NumericIntentHandler(AbstractRequestHandler):
         )
 
 
+class StringIntentHandler(AbstractRequestHandler):
     """Handler for String Intent."""
     
     def can_handle(self, handler_input):
