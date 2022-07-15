@@ -8,9 +8,10 @@
 		"ERROR_SPECIFIC_DATE": "Sorry, I can not do specific dates right now, try a duration instead, like... in 5 hours",
 		"HELP_MESSAGE": "This skill should be only reactively while triggered via home assistant.",
 		"OKAY": "Okay",
+		"STRING" : "You selected {}",
+		"SELECTED" : "You selected {}",
 		"SKILL_NAME": "home assistant custom actions",
 		"STOP_MESSAGE": "Goodbye!",
-		"SELECTED" : "You selected {}",
 		"WELCOME_MESSAGE": "Welcome to {}. Input text is: {}"
 	},
 	"de": {
@@ -22,6 +23,7 @@
 		"ERROR_SPECIFIC_DATE": "Ich kann leider noch kein spezifisches Datum verarbeiten. Bitte nutze stattedessen Zeiträume wie beispielsweise... in 5 Stunden.",
 		"HELP_MESSAGE": "Dieser Skill sollte nur reaktiv genutzt werden, wenn er via home assistant angestossen wird",
 		"OKAY": "Okay",
+		"STRING" : "Du hast {} gewählt",
 		"SELECTED" : "Du hast {} gewählt",
 		"SKILL_NAME": "home assistant custom actions",
 		"STOP_MESSAGE": "Machs gut!",
@@ -36,9 +38,10 @@
 		"ERROR_SPECIFIC_DATE": "Désolé, je ne peux pas gérer de date specifiques pour le moment. Essayez plutôt avec une période comme par exemple... dans 5 heures",
 		"HELP_MESSAGE": "Cette skill ne devrait être seulement réactive que depuis un appel de home assistant",
 		"OKAY": "Okay",
+		"STRING": "Vous avez choisi {}",
+		"SELECTED": "Vous avez choisi {}",
 		"SKILL_NAME": "home assistant custom actions",
 		"STOP_MESSAGE": "Au revoir!",
-		"SELECTED": "Vous avez choisi {}",
 		"WELCOME_MESSAGE": "Bienvenue sur {}. Le champ texte est: {}"
   },
   "ft-FR": {
@@ -56,9 +59,10 @@
 		"ERROR_SPECIFIC_DATE": "Mi dispiace, non riesco a usare date specifiche in questo caso, prova con una data relative, ad esempio... tra 5 ore",
 		"HELP_MESSAGE": "Questa skill dovrebbe rispondere solo quando attivata da Home Assistant.",
 		"OKAY": "Okay",
+		"STRING" : "Hai selezionato {}",
+		"SELECTED" : "Hai selezionato {}",
 		"SKILL_NAME": "Home Assistant Austom Actions",
 		"STOP_MESSAGE": "A presto!",
-		"SELECTED" : "Hai selezionato {}",
 		"WELCOME_MESSAGE": "Benvenuto su {}. Il testo specificato e': {}"
   },
   "it-IT": {
@@ -73,9 +77,10 @@
 		"ERROR_SPECIFIC_DATE": "Desculpe, não consigo lidar com datas específicas por enquanto. <break time='500ms'/> Tente dizer um intervalo de tempo, por exemplo... <break time='200ms'/> em 5 horas",
 		"HELP_MESSAGE": "Essa habilidade deve ser acionada reativamente quando invocada pelo Home Assistant.",
 		"OKAY": "Tudo bem",
+		"STRING": "Você escolheu {}",
+		"SELECTED": "Você escolheu {}",
 		"SKILL_NAME": "home Assistant, ações customizadas",
 		"STOP_MESSAGE": "Tchau!",
-		"SELECTED": "Você escolheu {}",
 		"WELCOME_MESSAGE": "Bem vindo ao {}. A entrada de texto é: {}"
 	},
 	"pt-BR": {

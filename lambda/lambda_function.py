@@ -49,6 +49,7 @@ RESPONSE_NONE = "ResponseNone"
 RESPONSE_SELECT = "ResponseSelect"
 RESPONSE_NUMERIC = "ResponseNumeric"
 RESPONSE_DURATION = "ResponseDuration"
+RESPONSE_STRING = "ResponseString"
 
 
 class Borg:
@@ -304,6 +305,29 @@ class NumericIntentHandler(AbstractRequestHandler):
         )
 
 
+class StringIntentHandler(AbstractRequestHandler):
+    """Handler for String Intent."""
+    
+    def can_handle(self, handler_input):
+        """Check for Select Intent."""
+        return is_intent_name('String')(handler_input)
+
+    def handle(self, handler_input):
+        """Handle String Intent."""
+        logger.info('String Intent Handler triggered')
+        ha_obj = HomeAssistant(handler_input)
+        strings = get_slot_value(handler_input, 'Strings')
+        logger.debug(f'String: {strings}')
+
+        speak_output = ha_obj.post_ha_event(strings, RESPONSE_STRING)
+
+        return (
+            handler_input.response_builder
+                .speak(speak_output)
+                .response
+        )
+
+
 class SelectIntentHandler(AbstractRequestHandler):
     """Handler for Select Intent."""
 
@@ -519,6 +543,7 @@ sb = SkillBuilder()
 sb.add_request_handler(LaunchRequestHandler())
 sb.add_request_handler(YesIntentHanlder())
 sb.add_request_handler(NoIntentHanlder())
+sb.add_request_handler(StringIntentHandler())
 sb.add_request_handler(SelectIntentHandler())
 sb.add_request_handler(NumericIntentHandler())
 sb.add_request_handler(DurationIntentHandler())

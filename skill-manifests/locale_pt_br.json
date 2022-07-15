@@ -36,6 +36,18 @@
                     ]
                 },
                 {
+                    "name": "String",
+                    "slots": [
+                        {
+                            "name": "Strings",
+                            "type": "AMAZON.SearchQuery"
+                        }
+                    ],
+                    "samples": [
+                        " {Strings}"
+                    ]
+                },
+                {
                     "name": "Select",
                     "slots": [
                         {
