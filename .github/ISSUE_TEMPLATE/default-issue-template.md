@@ -8,3 +8,4 @@ assignees: ''
 ---
 
 For all issues and feature requests, please replace this text with your issue or feature request. Thank you so much for all the support!
+For questions regarding configuration please check out discord: https://discord.gg/dvmeuDaypk
