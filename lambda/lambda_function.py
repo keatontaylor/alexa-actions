@@ -63,8 +63,6 @@ class Borg:
 class HomeAssistant(Borg):
     """HomeAssistant Wrapper Class."""
 
-    ha_state: Optional[dict] = None
-
     def __init__(self, handler_input=None):
         Borg.__init__(self)
         if handler_input:
@@ -75,8 +73,7 @@ class HomeAssistant(Borg):
 
         self.token = self._fetch_token() if TOKEN == "" else TOKEN
 
-        if not self.ha_state:
-            self.get_ha_state()
+        self.get_ha_state()
 
     def clear_state(self):
         """
