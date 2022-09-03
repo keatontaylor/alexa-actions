@@ -15,14 +15,14 @@ Did you try using TOKEN login instead of the Amazon Login service? ->
 Is the domain accessable by the public internet? ->
 
 
-##Cloud Watch Logs:
+## Cloud Watch Logs:
 
 <PASTE_HERE>
 
-##Expected Behaviour:
+## Expected Behaviour:
 
 <TYPE_HERE>
 
-##Problem Description:
+## Problem Description:
 
 <TYPE_HERE>
