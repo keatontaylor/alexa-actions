@@ -1,7 +1,6 @@
 **If you would like to create a new issue please follow and fill out the following parameters or your issue might be closed right away.**
 
-**Note:** Echo Shows are not fully supported so feel free to report and/or contribute but know that they are not fully supported yet.
-
+## Questions
 Release/Branch -> 
 
 Device (Example: Echo Gn 2 / Echo Show) -> 
@@ -26,3 +25,6 @@ Is the domain accessable by the public internet? ->
 ## Problem Description:
 
 <TYPE_HERE>
+
+
+**Note:** Echo Shows are not fully supported so feel free to report and/or contribute but know that they are not fully supported yet.
