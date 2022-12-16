@@ -1,7 +1,6 @@
 # VERSION 0.8.2
 
 # UPDATE THESE VARIABLES WITH YOUR CONFIG
-
 HOME_ASSISTANT_URL = 'https://yourinstall.com'  # REPLACE WITH THE URL FOR YOUR HOME ASSISTANT
 VERIFY_SSL = True  # SET TO FALSE IF YOU DO NOT HAVE VALID CERTS
 TOKEN = ''  # ADD YOUR LONG LIVED TOKEN IF NEEDED OTHERWISE LEAVE BLANK
@@ -14,6 +13,7 @@ import urllib3
 import json
 import isodate
 import prompts
+from datetime import datetime
 from typing import Union, Optional
 from urllib3 import HTTPResponse
 
@@ -50,6 +50,7 @@ RESPONSE_SELECT = "ResponseSelect"
 RESPONSE_NUMERIC = "ResponseNumeric"
 RESPONSE_DURATION = "ResponseDuration"
 RESPONSE_STRING = "ResponseString"
+RESPONSE_DATE_TIME = "ResponseDateTime"
 
 
 class Borg:
@@ -388,25 +389,78 @@ class DateTimeIntentHandler(AbstractRequestHandler):
     def handle(self, handler_input):
         """Handle the Date Time intent."""
         logger.info('Date Intent Handler triggered')
+        ha_obj = HomeAssistant(handler_input)
 
-        dates = get_slot_value(handler_input, 'Dates')
-        times = get_slot_value(handler_input, 'Times')
+        date = get_slot_value(handler_input, 'Dates')
+        time = get_slot_value(handler_input, 'Times')
 
-        logger.debug(f'Dates: {dates}')
-        logger.debug(f'Times: {times}')
+        logger.debug(f'Dates: {date} of type {type(date)}')
+        logger.debug(f'Times: {time} of type {type(time)}')
 
-        if not dates and not times:
+        if not date and not time:
             raise
 
-        data = handler_input.attributes_manager.request_attributes["_"]
-        speak_output = data[prompts.ERROR_SPECIFIC_DATE]
+        speak_output = ha_obj.post_ha_event(json.dumps({
+            **self._parse_date(date),
+            **self._parse_time(time)
+        }), RESPONSE_DATE_TIME)
 
         return (
             handler_input.response_builder
-                .speak(speak_output)
-                .ask('')
-                .response
+            .speak(speak_output)
+            .response
         )
+
+    @staticmethod
+    def _parse_date(date: str) -> dict:
+        date_data = {
+            'day': None,
+            'month': None,
+            'year': None,
+        }
+
+        if not date:
+            return date_data
+
+        date = date.split('-')
+        date_len = len(date)
+
+        date_data['day'] = date[2] if date_len >= 3 else None
+        date_data['month'] = date[1] if date_len >= 2 else None
+        date_data['year'] = date[0] if date_len >= 1 else None
+
+        return date_data
+
+    @staticmethod
+    def _parse_time(time: str) -> dict:
+        time_data = {
+            'seconds': None,
+            'minute': None,
+            'hour': None,
+        }
+
+        if not time:
+            return time_data
+
+        # If the letter s is present then the hole time represents a second
+        if 's' in time.lower():
+            time_data['seconds'] = time.lower().replace('s', '')
+            return time_data
+        if 'm' in time.lower():
+            time_data['minute'] = time.lower().replace('m', '')
+            return time_data
+        if 'h' in time.lower():
+            time_data['hour'] = time.lower().replace('h', '')
+            return time_data
+
+        time = time.split(':')
+        time_len = len(time)
+
+        time_data['seconds'] = time[2] if time_len >= 3 else None
+        time_data['minute'] = time[1] if time_len >= 2 else None
+        time_data['hour'] = time[0] if time_len >= 1 else None
+
+        return time_data
 
 
 class CancelOrStopIntentHandler(AbstractRequestHandler):
