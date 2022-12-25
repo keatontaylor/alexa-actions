@@ -1,0 +1,15 @@
+{
+  "manifest": {
+    "apis": {
+      "custom": { }
+    },
+    "manifestVersion": "1.0",
+    "publishingInformation": {
+      "locales": {
+        "en-US": {
+          "name": "Actionable notifications"
+        }
+      }
+    }
+  }
+}
