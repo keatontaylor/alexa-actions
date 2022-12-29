@@ -22,13 +22,14 @@
         {
           "name": "AMAZON.YesIntent",
           "samples": [
-            "yes"
+            "oui",
+            "ouais"
           ]
         },
         {
           "name": "AMAZON.NoIntent",
           "samples": [
-            "no"
+            "non"
           ]
         },
         {

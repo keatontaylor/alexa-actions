@@ -6,8 +6,20 @@
     "manifestVersion": "1.0",
     "publishingInformation": {
       "locales": {
+        "de-DE": {
+          "name": "Alexa actionable notifications"
+        },
         "en-US": {
-          "name": "Actionable notifications"
+          "name": "Alexa actionable notifications"
+        },
+        "fr-FR": {
+          "name": "Alexa actionable notifications"
+        },
+        "it-IT": {
+          "name": "Alexa actionable notifications"
+        },
+        "pt-BR": {
+          "name": "Alexa actionable notifications"
         }
       }
     }
