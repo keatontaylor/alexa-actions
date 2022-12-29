@@ -5,7 +5,9 @@
       "intents": [
         {
           "name": "AMAZON.CancelIntent",
-          "samples": []
+          "samples": [
+            "cancelar"
+          ]
         },
         {
           "name": "AMAZON.HelpIntent",
@@ -13,7 +15,9 @@
         },
         {
           "name": "AMAZON.StopIntent",
-          "samples": []
+          "samples": [
+            "pare"
+          ]
         },
         {
           "name": "AMAZON.NavigateHomeIntent",
@@ -22,13 +26,13 @@
         {
           "name": "AMAZON.YesIntent",
           "samples": [
-            "yes"
+            "sim"
           ]
         },
         {
           "name": "AMAZON.NoIntent",
           "samples": [
-            "no"
+            "não"
           ]
         },
         {
@@ -92,8 +96,8 @@
             }
           ],
           "samples": [
-            "{Dates} at {Times}",
-            "at {Times}",
+            "{Dates} às {Times}",
+            "às {Times}",
             "{Dates}"
           ]
         }

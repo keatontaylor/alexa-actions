@@ -1,45 +1,73 @@
 {
-	"en": {
-	    "ERROR_401": "It looks like I am unauthorized to reach home assistant, please check your account linking or your long lived access token and try again",
-		"ERROR_404": "It looks like I may not be able to find the input text entity. Please check that you've added it to home assistant and try again",
-		"ERROR_400": "Could not communicate with home assistant. Please check the Amazon CloudWatch logs in the custom skill developer console.",
-	    "ERROR_ACOUSTIC": "Sorry I did not catch that... <break time='200ms'/> {}",
-		"ERROR_CONFIG": "Sorry, I am having trouble, please check your configuration, in the custom skill and try again.",
-		"HELP_MESSAGE": "This skill should be only reactively while triggered via home assistant.",
-		"OKAY": "Okay",
-		"STRING" : "You selected {}",
-		"SELECTED" : "You selected {}",
-		"SKILL_NAME": "home assistant custom actions",
-		"STOP_MESSAGE": "Goodbye!",
-		"WELCOME_MESSAGE": "Welcome to {}. Input text is: {}"
-	},
-	"de": {
-	    "ERROR_401": "Ich habe scheinbar keine Berechtigungen für die verbindung zu home assistant. Bitte prüfe deinen H A Benutzer oder Access Token.",
-		"ERROR_404": "Ich kann kein input text Objekt in home assistant finden. Bitte überprüfe ob du dieses bereits hinzugefügt hast.",
-		"ERROR_400": "Ich kann keine Verbindung zum home assistant vornehmen. Bitte prüfe die Amazon CloudWatch logdateien in der Alexa Entwickler Console.",
-		"ERROR_ACOUSTIC": "Das habe ich leider nicht verstanden... <break time='200ms'/> {}",
-		"ERROR_CONFIG": "Entschuldige, hier ist etwas schief gelaufen. Bitte prüfe deine Konfiugration im custom skill und versuche es erneut.",
-		"HELP_MESSAGE": "Dieser Skill sollte nur reaktiv genutzt werden, wenn er via home assistant angestossen wird",
-		"OKAY": "Okay",
-		"STRING" : "Du hast {} gewählt",
-		"SELECTED" : "Du hast {} gewählt",
-		"SKILL_NAME": "home assistant custom actions",
-		"STOP_MESSAGE": "Machs gut!",
-		"WELCOME_MESSAGE": "Willkommen bei {}. Der input text ist: {}"
-	},
-	"fr": {
-		"ERROR_401": "Il semblerait que je ne sois pas authorisée à accéder à home assistant, veuillez verifier la liaison de compte ou le token d'accès longue durée et essayez à nouveau.",
-		"ERROR_404": "Il semblerait que je ne sois pas capable de trouver l'entité champ texte. Veuillez verifier que vous l'avez bien ajouté à home assistant et essayez à nouveau.",
-		"ERROR_400": "Impossible de communiquer avec home assistant. Veuillez verifier les logs Amazon CloudWAtch dans la console de développement de votre skill personnalisé.",
-		"ERROR_ACOUSTIC": "Désolé je n'ai pas compris... <break time='200ms'/> {}.",
-		"ERROR_CONFIG": "Désolé, j'ai quelques problèmes, veuillez verifier votre configuration dans votre skill personnalisé et essayez à nouveau.",
-		"HELP_MESSAGE": "Cette skill ne devrait être seulement réactive que depuis un appel de home assistant",
-		"OKAY": "Okay",
-		"STRING": "Vous avez choisi {}",
-		"SELECTED": "Vous avez choisi {}",
-		"SKILL_NAME": "home assistant custom actions",
-		"STOP_MESSAGE": "Au revoir!",
-		"WELCOME_MESSAGE": "Bienvenue sur {}. Le champ texte est: {}"
+  "en": {
+    "ERROR_401": "It looks like I am unauthorized to reach home assistant, please check your account linking or your long lived access token and try again",
+    "ERROR_404": "It looks like I may not be able to find the input text entity. Please check that you've added it to home assistant and try again",
+    "ERROR_400": "Could not communicate with home assistant. Please check the Amazon CloudWatch logs in the custom skill developer console.",
+    "ERROR_ACOUSTIC": "Sorry I did not catch that... <break time='200ms'/> {}",
+    "ERROR_CONFIG": "Sorry, I am having trouble, please check your configuration, in the custom skill and try again.",
+    "HELP_MESSAGE": "This skill should be only reactively while triggered via home assistant.",
+    "OKAY": "Okay",
+    "STRING": "You selected {}",
+    "SELECTED": "You selected {}",
+    "SKILL_NAME": "home assistant custom actions",
+    "STOP_MESSAGE": "Goodbye!",
+    "WELCOME_MESSAGE": "Welcome to {}. Input text is: {}"
+  },
+  "de": {
+    "ERROR_401": "Ich habe scheinbar keine Berechtigungen für die verbindung zu home assistant. Bitte prüfe deinen H A Benutzer oder Access Token.",
+    "ERROR_404": "Ich kann kein input text Objekt in home assistant finden. Bitte überprüfe ob du dieses bereits hinzugefügt hast.",
+    "ERROR_400": "Ich kann keine Verbindung zum home assistant vornehmen. Bitte prüfe die Amazon CloudWatch logdateien in der Alexa Entwickler Console.",
+    "ERROR_ACOUSTIC": "Das habe ich leider nicht verstanden... <break time='200ms'/> {}",
+    "ERROR_CONFIG": "Entschuldige, hier ist etwas schief gelaufen. Bitte prüfe deine Konfiugration im custom skill und versuche es erneut.",
+    "HELP_MESSAGE": "Dieser Skill sollte nur reaktiv genutzt werden, wenn er via home assistant angestossen wird",
+    "OKAY": "Okay",
+    "STRING": "Du hast {} gewählt",
+    "SELECTED": "Du hast {} gewählt",
+    "SKILL_NAME": "home assistant custom actions",
+    "STOP_MESSAGE": "Machs gut!",
+    "WELCOME_MESSAGE": "Willkommen bei {}. Der input text ist: {}"
+  },
+  "fr": {
+    "ERROR_401": "Il semblerait que je ne sois pas authorisée à accéder à home assistant, veuillez verifier la liaison de compte ou le token d'accès longue durée et essayez à nouveau.",
+    "ERROR_404": "Il semblerait que je ne sois pas capable de trouver l'entité champ texte. Veuillez verifier que vous l'avez bien ajouté à home assistant et essayez à nouveau.",
+    "ERROR_400": "Impossible de communiquer avec home assistant. Veuillez verifier les logs Amazon CloudWAtch dans la console de développement de votre skill personnalisé.",
+    "ERROR_ACOUSTIC": "Désolé je n'ai pas compris... <break time='200ms'/> {}.",
+    "ERROR_CONFIG": "Désolé, j'ai quelques problèmes, veuillez verifier votre configuration dans votre skill personnalisé et essayez à nouveau.",
+    "HELP_MESSAGE": "Cette skill ne devrait être seulement réactive que depuis un appel de home assistant",
+    "OKAY": "Okay",
+    "STRING": "Vous avez choisi {}",
+    "SELECTED": "Vous avez choisi {}",
+    "SKILL_NAME": "home assistant custom actions",
+    "STOP_MESSAGE": "Au revoir!",
+    "WELCOME_MESSAGE": "Bienvenue sur {}. Le champ texte est: {}"
+  },
+  "it": {
+    "ERROR_401": "Problema con le autorizzazioni di accesso ad Home Assistant: controllare l'account collegato o eventuali token utilizzati e riprovare",
+    "ERROR_404": "Impossibile accedere all'input_text. Controllare di averlo aggiunto correttamente ad Home Assistant come indicato nelle istruzioni e riprovare",
+    "ERROR_400": "Impossibile accedere ad Home Assistant. Controllare i logs su Amazon CloudWatch nella custom skill developer console.",
+    "ERROR_ACOUSTIC": "Mi dispiace, non ho capito... <break time='200ms'/> {}",
+    "ERROR_CONFIG": "Mi dispiace, c'e' qualche problema, per favore controlla la configurazione della custom skill e riprova.",
+    "HELP_MESSAGE": "Questa skill dovrebbe rispondere solo quando attivata da Home Assistant.",
+    "OKAY": "Okay",
+    "STRING": "Hai selezionato {}",
+    "SELECTED": "Hai selezionato {}",
+    "SKILL_NAME": "Home Assistant Austom Actions",
+    "STOP_MESSAGE": "A presto!",
+    "WELCOME_MESSAGE": "Benvenuto su {}. Il testo specificato e': {}"
+  },
+  "pt": {
+    "ERROR_401": "Parece que eu não estou autorizada a acessar seu Home Assistant. Verifique as credenciais e tente novamente.",
+    "ERROR_404": "Parece que você não configurou a entidade de entrada de texto corretamente. Verifique se ela está disponível e tente novamente",
+    "ERROR_400": "Não consigo me conectar ao Home Assistant. Por favor, cheque os registros no painel de desenvolvimento desta minha habilidade.",
+    "ERROR_ACOUSTIC": "Desculpe, não entendi... <break time='200ms'/> {}",
+    "ERROR_CONFIG": "Desculpe, estou com problemas. Por favor, cheque suas configurações nesta minha habilidade e tente novamente.",
+    "HELP_MESSAGE": "Essa habilidade deve ser acionada reativamente quando invocada pelo Home Assistant.",
+    "OKAY": "Tudo bem",
+    "STRING": "Você escolheu {}",
+    "SELECTED": "Você escolheu {}",
+    "SKILL_NAME": "home Assistant, ações customizadas",
+    "STOP_MESSAGE": "Tchau!",
+    "WELCOME_MESSAGE": "Bem vindo ao {}. A entrada de texto é: {}"
   },
   "ft-FR": {
     "SKILL_NAME": "home assistant custom actions"
@@ -47,38 +75,10 @@
   "fr-CA": {
     "SKILL_NAME": "home assistant custom actions"
   },
-	"it": {
-	    "ERROR_401": "Problema con le autorizzazioni di accesso ad Home Assistant: controllare l'account collegato o eventuali token utilizzati e riprovare",
-		"ERROR_404": "Impossibile accedere all'input_text. Controllare di averlo aggiunto correttamente ad Home Assistant come indicato nelle istruzioni e riprovare",
-		"ERROR_400": "Impossibile accedere ad Home Assistant. Controllare i logs su Amazon CloudWatch nella custom skill developer console.",
-	    "ERROR_ACOUSTIC": "Mi dispiace, non ho capito... <break time='200ms'/> {}",
-		"ERROR_CONFIG": "Mi dispiace, c'e' qualche problema, per favore controlla la configurazione della custom skill e riprova.",
-		"HELP_MESSAGE": "Questa skill dovrebbe rispondere solo quando attivata da Home Assistant.",
-		"OKAY": "Okay",
-		"STRING" : "Hai selezionato {}",
-		"SELECTED" : "Hai selezionato {}",
-		"SKILL_NAME": "Home Assistant Austom Actions",
-		"STOP_MESSAGE": "A presto!",
-		"WELCOME_MESSAGE": "Benvenuto su {}. Il testo specificato e': {}"
-  },
   "it-IT": {
     "SKILL_NAME": "Home Assistant Austom Actions"
   },
-	"pt": {
-		"ERROR_401": "Parece que eu não estou autorizada a acessar seu Home Assistant. Verifique as credenciais e tente novamente.",
-		"ERROR_404": "Parece que você não configurou a entidade de entrada de texto corretamente. Verifique se ela está disponível e tente novamente",
-		"ERROR_400": "Não consigo me conectar ao Home Assistant. Por favor, cheque os registros no painel de desenvolvimento desta minha habilidade.",
-		"ERROR_ACOUSTIC": "Desculpe, não entendi... <break time='200ms'/> {}",
-		"ERROR_CONFIG": "Desculpe, estou com problemas. Por favor, cheque suas configurações nesta minha habilidade e tente novamente.",
-		"HELP_MESSAGE": "Essa habilidade deve ser acionada reativamente quando invocada pelo Home Assistant.",
-		"OKAY": "Tudo bem",
-		"STRING": "Você escolheu {}",
-		"SELECTED": "Você escolheu {}",
-		"SKILL_NAME": "home Assistant, ações customizadas",
-		"STOP_MESSAGE": "Tchau!",
-		"WELCOME_MESSAGE": "Bem vindo ao {}. A entrada de texto é: {}"
-	},
-	"pt-BR": {
-		"SKILL_NAME": "home Assistant, ações customizadas"
-	}
+  "pt-BR": {
+    "SKILL_NAME": "home Assistant, ações customizadas"
+  }
 }
