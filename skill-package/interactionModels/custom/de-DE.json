@@ -22,13 +22,13 @@
         {
           "name": "AMAZON.YesIntent",
           "samples": [
-            "yes"
+            "ja"
           ]
         },
         {
           "name": "AMAZON.NoIntent",
           "samples": [
-            "no"
+            "nein"
           ]
         },
         {
@@ -92,8 +92,8 @@
             }
           ],
           "samples": [
-            "{Dates} at {Times}",
-            "at {Times}",
+            "{Dates} um {Times}",
+            "um {Times}",
             "{Dates}"
           ]
         }

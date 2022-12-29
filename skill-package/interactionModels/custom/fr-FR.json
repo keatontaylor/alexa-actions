@@ -93,8 +93,8 @@
             }
           ],
           "samples": [
-            "{Dates} at {Times}",
-            "at {Times}",
+            "{Dates} a {Times}",
+            "a {Times}",
             "{Dates}"
           ]
         }
