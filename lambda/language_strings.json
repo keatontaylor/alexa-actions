@@ -70,15 +70,15 @@
     "WELCOME_MESSAGE": "Bem vindo ao {}. A entrada de texto é: {}"
   },
   "ft-FR": {
-    "SKILL_NAME": "home assistant custom actions"
+    "SKILL_NAME": "Actionable notifications"
   },
   "fr-CA": {
-    "SKILL_NAME": "home assistant custom actions"
+    "SKILL_NAME": "Actionable notifications"
   },
   "it-IT": {
-    "SKILL_NAME": "Home Assistant Austom Actions"
+    "SKILL_NAME": "Actionable notifications"
   },
   "pt-BR": {
-    "SKILL_NAME": "home Assistant, ações customizadas"
+    "SKILL_NAME": "Ações customizadas"
   }
 }
