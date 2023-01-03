@@ -27,38 +27,38 @@ body:
   - type: input
     id: version
     attributes:
-      label: Version
-      description: What version of our software are you running?
+      label: "Version"
+      description: "What version of our software are you running?"
     validations:
       required: true
   - type: dropdown
     id: devices
     attributes:
-      label: What Alexa device are you using?
+      label: "What Alexa device are you using?"
       multiple: true
       options:
-        - Echo
-        - Echo Show
-        - Fire TV
-        - Other
+        - "Echo"
+        - "Echo Show"
+        - "Fire TV"
+        - "Other"
   - type: input
       id: other-device
       attributes:
-        label: Other Device
-        description: If you selected other in devices dropdown please let us know which one did you use!
+        label: "Other Device"
+        description: "If you selected other in devices dropdown please let us know which one did you use!"
       validations:
         required: false
   - type: textarea
     id: logs
     attributes:
-      label: Relevant log output
-      description: Please copy and paste any relevant log output. This will be automatically formatted into code, so no need for backticks.
-      render: shell
+      label: "Relevant log output"
+      description: "Please copy and paste any relevant log output. This will be automatically formatted into code, so no need for backticks."
+      render: "shell"
   - type: checkboxes
     id: terms
     attributes:
-      label: Code of Conduct
-      description: By submitting this issue, you agree to follow our Code of Conduct
+      label: "Code of Conduct"
+      description: "By submitting this issue, you agree to follow our Code of Conduct"
       options:
-        - label: I agree to follow this project's Code of Conduct
+        - label: "I agree to follow this project's Code of Conduct"
           required: true
