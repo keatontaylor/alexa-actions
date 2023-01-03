@@ -41,13 +41,7 @@ body:
         - "Echo Show"
         - "Fire TV"
         - "Other"
-  - type: input
-      id: other-device
-      attributes:
-        label: "Other Device"
-        description: "If you selected other in devices dropdown please let us know which one did you use!"
-      validations:
-        required: false
+
   - type: textarea
     id: logs
     attributes:
