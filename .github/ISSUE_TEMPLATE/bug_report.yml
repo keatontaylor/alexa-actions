@@ -41,7 +41,13 @@ body:
         - "Echo Show"
         - "Fire TV"
         - "Other"
-
+  - type: input
+    id: otherdevices
+    attributes:
+      label: "What other Alexa device are you using?"
+      description: "Type you device if you selected other in the dropdown"
+    validations:
+      required: true
   - type: textarea
     id: logs
     attributes:
