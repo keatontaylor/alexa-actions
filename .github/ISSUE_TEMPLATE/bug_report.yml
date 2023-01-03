@@ -6,22 +6,7 @@ body:
   - type: markdown
     attributes:
       value: "Thanks for taking the time to fill out this bug report!"
-  - type: checkboxes
-    id: faq-read
-    attributes:
-      label: "I read and didn't find a solution in our FAQ"
-      description: "By checking this you truly believe that this is a new bug that does not have a solution in our FAQ"
-      options:
-        - label: "FAQ checked!"
-          required: true
-  - type: checkboxes
-      id: similar-issues-read
-      attributes:
-        label: "I read and didn't find a solution in our issue pool"
-        description: "By checking this you truly believe that this is a new bug that does not have a current PR or issue open"
-        options:
-          - label: "Issues/PRs checked!"
-            required: true
+
   - type: input
     id: contact
     attributes:
