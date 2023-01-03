@@ -7,21 +7,14 @@ body:
     attributes:
       value: "Thanks for taking the time to fill out this bug report!"
   - type: checkboxes
-    id: faqread
+    id: faqissueread
     attributes:
-      label: "I read and didn't find a solution in our FAQ"
-      description: "By checking this you truly believe that this is a new bug that does not have a solution in our FAQ"
+      label: "Did you check our FAQ and Issue/PR for similar issues?"
       options:
         - label: "FAQ checked!"
           required: true
-  - type: checkboxes
-      id: similarissuesread
-      attributes:
-        label: "I read and didn't find a solution in our issue pool"
-        description: "By checking this you truly believe that this is a new bug that does not have a current PR or issue open"
-        options:
-          - label: "Issues/PRs checked!"
-            required: true
+        - label: "Issues/PR checked!"
+          required: true
   - type: input
     id: contact
     attributes:
