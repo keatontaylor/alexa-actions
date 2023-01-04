@@ -76,11 +76,23 @@ class Borg:
         self.__dict__ = self._shared_state
 
 
+def _init_http_pool():
+    return urllib3.PoolManager(
+        cert_reqs='CERT_REQUIRED' if VERIFY_SSL else 'CERT_NONE',
+        timeout=urllib3.Timeout(connect=10.0, read=10.0)
+    )
+
+
 class HomeAssistant(Borg):
     """HomeAssistant Wrapper Class."""
 
     def __init__(self, handler_input=None):
         Borg.__init__(self)
+
+        # Define class vars
+        self.ha_state = None
+        self.http = _init_http_pool()
+
         if handler_input:
             self.handler_input = handler_input
 
@@ -91,17 +103,43 @@ class HomeAssistant(Borg):
 
         self.get_ha_state()
 
-    def clear_state(self):
-        """
-            Clear the state of the local Home Assistant object.
-        """
-
-        logger.debug("Clearing Home Assistant local state")
-        self.ha_state = None
-
     def _fetch_token(self):
         logger.debug("Fetching Home Assistant token from Alexa")
         return get_account_linking_access_token(self.handler_input)
+
+    def _set_ha_error(self, prompt: str):
+        """
+            Sets the self.ha_state to the error prompt
+
+            Used when a function fails and alexa should say the error message instead of the
+            intended one
+
+            :param prompt: Value obtained from prompts file
+            :return:
+        """
+        self.ha_state = {"error": True, "text": self.language_strings[prompt]}
+
+    @staticmethod
+    def _build_url(*path: str):
+        """
+            Builds the url from paths given
+
+            :param path:
+            :return:
+        """
+        return f'{HOME_ASSISTANT_URL}/' + '/'.join(*path)
+
+    def _get_headers(self):
+        """
+            Returns the request headers
+
+            :return:
+        """
+
+        return {
+            'Authorization': f'Bearer {self.token}',
+            'Content-Type': 'application/json'
+        }
 
     def _check_response_errors(self, response: HTTPResponse) -> Union[bool, str]:
         if response.status == 401:
@@ -123,50 +161,101 @@ class HomeAssistant(Borg):
 
         return False
 
-    def get_ha_state(self) -> None:
+    def _get(self, *path: str, extra_headers: Optional[dict] = None):
         """
-            Updates the local Home Assistant state with the
-            latest state from the Home Assistant server.
+            Performs a request
+
+            :param path:
+            :param headers:
+            :param params:
+            :return:
         """
+        headers = self._get_headers()
+        if extra_headers:
+            headers = headers.update(extra_headers)
 
-        http = urllib3.PoolManager(
-            cert_reqs='CERT_REQUIRED' if VERIFY_SSL else 'CERT_NONE',
-            timeout=urllib3.Timeout(connect=10.0, read=10.0)
-        )
-
-        response = http.request(
-            'GET',
-            f'{HOME_ASSISTANT_URL}/api/states/{INPUT_TEXT_ENTITY}',
-            headers={
-                'Authorization': f'Bearer {self.token}',
-                'Content-Type': 'application/json'
-            },
-        )
+        url = self._build_url(*path)
+        response = self.http.request('GET', url, headers=headers)
 
         errors: Union[bool, str] = self._check_response_errors(response)
         if errors:
-            self.ha_state = {
-                "error": True,
-                "text": errors
-            }
+            self.ha_state = {"error": True, "text": errors}
             logger.debug(self.ha_state)
+            return None
+
+        return response
+
+    def _post(self, *path: str, body: dict, extra_headers: Optional[dict] = None):
+        """
+            Performs a request
+
+            :param path:
+            :param headers:
+            :param params:
+            :return:
+        """
+        headers = self._get_headers()
+        if extra_headers:
+            headers = headers.update(extra_headers)
+
+        url = self._build_url(*path)
+        response = self.http.request('POST', url, headers=headers,
+                                     body=json.dumps(body).encode('utf-8'))
+
+        errors: Union[bool, str] = self._check_response_errors(response)
+        if errors:
+            self.ha_state = {"error": True, "text": errors}
+            logger.debug(self.ha_state)
+            return None
+
+        return response
+
+    def _decode_response(self, response) -> Optional[dict]:
+        """
+            Decodes the response into a json object
+
+            :param response:
+            :return: Json object or None
+        """
+        decoded_response: Union[str, bytes] = json.loads(response.data.decode('utf-8')).get('state')
+
+        if decoded_response:
+            logger.debug(f'Decoded response: {decoded_response}')
+            return json.loads(decoded_response)
+
+        logger.error("No entity state provided by Home Assistant. "
+                     "Did you forget to add the actionable notification entity?")
+        self._set_ha_error(prompts.ERROR_CONFIG)
+        logger.debug(self.ha_state)
+        return
+
+    def clear_state(self):
+        """
+            Clear the state of the local Home Assistant object.
+        """
+
+        logger.debug("Clearing Home Assistant local state")
+        self.ha_state = None
+
+    def get_ha_state(self):
+        """
+            Updates the local HA state with the servers state
+
+            Used for getting the text to speak, event_id as well as other passable variables
+        """
+        response = self._get('api', 'states', INPUT_TEXT_ENTITY)
+        if not response:
             return
 
-        decoded_response: Union[str, bytes] = json.loads(response.data.decode('utf-8')).get('state')
-        if not decoded_response:
-            logger.error("No entity state provided by Home Assistant. "
-                         "Did you forget to add the actionable notification entity?")
-            self.ha_state = {
-                "error": True,
-                "text": self.language_strings[prompts.ERROR_CONFIG]
-            }
-            logger.debug(self.ha_state)
+        response = self._decode_response(response)
+        if not response:
             return
 
         self.ha_state = {
             "error": False,
-            "event_id": json.loads(decoded_response).get('event'),
-            "text": json.loads(decoded_response).get('text')
+            "event_id": response.get('event'),
+            "suppress_confirmation": bool(response.get('suppress_confirmation', False)),
+            "text": response.get('text')
         }
         logger.debug(self.ha_state)
 
@@ -179,43 +268,27 @@ class HomeAssistant(Borg):
             :param kwargs: Additional parameters to send to the Home Assistant server.
             :return: The text to speak to the user.
         """
-
-        http = urllib3.PoolManager(
-            cert_reqs='CERT_REQUIRED' if VERIFY_SSL else 'CERT_NONE',
-            timeout=urllib3.Timeout(connect=10.0, read=10.0)
-        )
-
-        request_body = {
+        body = {
             "event_id": self.ha_state.get('event_id'),
             "event_response": response,
             "event_response_type": response_type
         }
-        request_body.update(kwargs)
+        body.update(kwargs)
 
         if self.handler_input.request_envelope.context.system.person:
             person_id = self.handler_input.request_envelope.context.system.person.person_id
-            request_body['event_person_id'] = person_id
+            body['event_person_id'] = person_id
 
-        response = http.request(
-            'POST',
-            f'{HOME_ASSISTANT_URL}/api/events/alexa_actionable_notification',
-            headers={
-                'Authorization': f'Bearer {self.token}',
-                'Content-Type': 'application/json'
-            },
-            body=json.dumps(request_body).encode('utf-8')
-        )
+        response = self._post('api', 'events', 'alexa_actionable_notification', body=body)
+        if not response:
+            return self.ha_state.get('text')
 
-        error: Union[bool, str] = self._check_response_errors(response)
-        if error:
-            return error
-
-        speak_output = None
         if self.ha_state.get('suppress_confirmation'):
-            speak_output: str = self.language_strings[prompts.OKAY]
+            self.clear_state()
+            return self.language_strings[prompts.OKAY]
 
         self.clear_state()
-        return speak_output
+        return ''
 
     def get_value_for_slot(self, slot_name):
         """"Get value from slot, also known as the (why does amazon make you do this)"""
@@ -303,7 +376,7 @@ class NumericIntentHandler(AbstractRequestHandler):
 
 class StringIntentHandler(AbstractRequestHandler):
     """Handler for String Intent."""
-    
+
     def can_handle(self, handler_input):
         """Check for Select Intent."""
         return is_intent_name('String')(handler_input)
