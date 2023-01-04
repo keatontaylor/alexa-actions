@@ -13,7 +13,6 @@ import urllib3
 import json
 import isodate
 import prompts
-from datetime import datetime
 from typing import Union, Optional
 from urllib3 import HTTPResponse
 
@@ -51,6 +50,22 @@ RESPONSE_NUMERIC = "ResponseNumeric"
 RESPONSE_DURATION = "ResponseDuration"
 RESPONSE_STRING = "ResponseString"
 RESPONSE_DATE_TIME = "ResponseDateTime"
+
+
+def _handle_response(handler, speak_out: Optional[str]):
+    """
+        This function has the purpose of allowing the suspension of the default Okay response
+        so the user can have home assistant do a custom response or follow-up question.
+
+        Fixes issue: #147
+
+        :param handler:
+        :param speak_out:
+        :return:
+    """
+    if speak_out:
+        return handler.response_builder.speak(speak_out).response
+    return handler.response_builder.response
 
 
 class Borg:
@@ -155,7 +170,7 @@ class HomeAssistant(Borg):
         }
         logger.debug(self.ha_state)
 
-    def post_ha_event(self, response: str, response_type: str, **kwargs) -> str:
+    def post_ha_event(self, response: str, response_type: str, **kwargs) -> Optional[str]:
         """
             Posts an event to the Home Assistant server.
 
@@ -195,7 +210,10 @@ class HomeAssistant(Borg):
         if error:
             return error
 
-        speak_output: str = self.language_strings[prompts.OKAY]
+        speak_output = None
+        if self.ha_state.get('suppress_confirmation'):
+            speak_output: str = self.language_strings[prompts.OKAY]
+
         self.clear_state()
         return speak_output
 
@@ -223,20 +241,12 @@ class LaunchRequestHandler(AbstractRequestHandler):
         speak_output: Optional[str] = ha_obj.ha_state['text']
         event_id: Optional[str] = ha_obj.ha_state['event_id']
 
+        handler = handler_input.response_builder.speak(speak_output)
+
         if event_id:
-            return (
-                handler_input.response_builder
-                    .speak(speak_output)
-                    .ask('')
-                    .response
-            )
-        else:
-            ha_obj.clear_state()
-            return (
-                handler_input.response_builder
-                    .speak(speak_output)
-                    .response
-            )
+            handler.ask('')
+
+        return handler.response
 
 
 class YesIntentHanlder(AbstractRequestHandler):
@@ -252,11 +262,7 @@ class YesIntentHanlder(AbstractRequestHandler):
         ha_obj = HomeAssistant(handler_input)
         speak_output = ha_obj.post_ha_event(RESPONSE_YES, RESPONSE_YES)
 
-        return (
-            handler_input.response_builder
-                .speak(speak_output)
-                .response
-        )
+        return _handle_response(handler_input, speak_output)
 
 
 class NoIntentHanlder(AbstractRequestHandler):
@@ -272,11 +278,7 @@ class NoIntentHanlder(AbstractRequestHandler):
         ha_obj = HomeAssistant(handler_input)
         speak_output = ha_obj.post_ha_event(RESPONSE_NO, RESPONSE_NO)
 
-        return (
-            handler_input.response_builder
-                .speak(speak_output)
-                .response
-        )
+        return _handle_response(handler_input, speak_output)
 
 
 class NumericIntentHandler(AbstractRequestHandler):
@@ -296,11 +298,7 @@ class NumericIntentHandler(AbstractRequestHandler):
             raise
         speak_output = ha_obj.post_ha_event(number, RESPONSE_NUMERIC)
 
-        return (
-            handler_input.response_builder
-                .speak(speak_output)
-                .response
-        )
+        return _handle_response(handler_input, speak_output)
 
 
 class StringIntentHandler(AbstractRequestHandler):
@@ -319,11 +317,7 @@ class StringIntentHandler(AbstractRequestHandler):
 
         speak_output = ha_obj.post_ha_event(strings, RESPONSE_STRING)
 
-        return (
-            handler_input.response_builder
-                .speak(speak_output)
-                .response
-        )
+        return _handle_response(handler_input, speak_output)
 
 
 class SelectIntentHandler(AbstractRequestHandler):
@@ -347,11 +341,7 @@ class SelectIntentHandler(AbstractRequestHandler):
         data = handler_input.attributes_manager.request_attributes["_"]
         speak_output = data[prompts.SELECTED].format(selection)
 
-        return (
-            handler_input.response_builder
-                .speak(speak_output)
-                .response
-        )
+        return _handle_response(handler_input, speak_output)
 
 
 class DurationIntentHandler(AbstractRequestHandler):
@@ -372,11 +362,7 @@ class DurationIntentHandler(AbstractRequestHandler):
         speak_output = ha_obj.post_ha_event(
             isodate.parse_duration(duration).total_seconds(), RESPONSE_DURATION)
 
-        return (
-            handler_input.response_builder
-                .speak(speak_output)
-                .response
-        )
+        return _handle_response(handler_input, speak_output)
 
 
 class DateTimeIntentHandler(AbstractRequestHandler):
@@ -405,11 +391,7 @@ class DateTimeIntentHandler(AbstractRequestHandler):
             **self._parse_time(time)
         }), RESPONSE_DATE_TIME)
 
-        return (
-            handler_input.response_builder
-            .speak(speak_output)
-            .response
-        )
+        return _handle_response(handler_input, speak_output)
 
     @staticmethod
     def _parse_date(date: str) -> dict:
@@ -477,11 +459,7 @@ class CancelOrStopIntentHandler(AbstractRequestHandler):
         data = handler_input.attributes_manager.request_attributes["_"]
         speak_output = data[prompts.STOP_MESSAGE]
 
-        return (
-            handler_input.response_builder
-                .speak(speak_output)
-                .response
-        )
+        return _handle_response(handler_input, speak_output)
 
 
 class SessionEndedRequestHandler(AbstractRequestHandler):
