@@ -83,6 +83,19 @@ def _init_http_pool():
     )
 
 
+def _string_bool_to_bool(value: str) -> bool:
+    """
+        Used because we need to convert boolean values passed in strings since
+        entity states don't natively support json and are treated as strings.
+
+        :param value:
+        :return:
+    """
+    if value.lower() == 'true':
+        return True
+    return False
+
+
 class HomeAssistant(Borg):
     """HomeAssistant Wrapper Class."""
 
@@ -127,7 +140,7 @@ class HomeAssistant(Borg):
             :param path:
             :return:
         """
-        return f'{HOME_ASSISTANT_URL}/' + '/'.join(*path)
+        return f'{HOME_ASSISTANT_URL}/' + '/'.join(path)
 
     def _get_headers(self):
         """
@@ -177,6 +190,8 @@ class HomeAssistant(Borg):
         url = self._build_url(*path)
         response = self.http.request('GET', url, headers=headers)
 
+        logger.debug(f'Raw response: {response.data}')
+
         errors: Union[bool, str] = self._check_response_errors(response)
         if errors:
             self.ha_state = {"error": True, "text": errors}
@@ -218,9 +233,9 @@ class HomeAssistant(Borg):
             :return: Json object or None
         """
         decoded_response: Union[str, bytes] = json.loads(response.data.decode('utf-8')).get('state')
+        logger.debug(f'Decoded response: {decoded_response}')
 
         if decoded_response:
-            logger.debug(f'Decoded response: {decoded_response}')
             return json.loads(decoded_response)
 
         logger.error("No entity state provided by Home Assistant. "
@@ -254,7 +269,7 @@ class HomeAssistant(Borg):
         self.ha_state = {
             "error": False,
             "event_id": response.get('event'),
-            "suppress_confirmation": bool(response.get('suppress_confirmation', False)),
+            "suppress_confirmation": _string_bool_to_bool(response.get('suppress_confirmation')),
             "text": response.get('text')
         }
         logger.debug(self.ha_state)
@@ -283,7 +298,7 @@ class HomeAssistant(Borg):
         if not response:
             return self.ha_state.get('text')
 
-        if self.ha_state.get('suppress_confirmation'):
+        if not self.ha_state.get('suppress_confirmation'):
             self.clear_state()
             return self.language_strings[prompts.OKAY]
 
@@ -322,7 +337,7 @@ class LaunchRequestHandler(AbstractRequestHandler):
         return handler.response
 
 
-class YesIntentHanlder(AbstractRequestHandler):
+class YesIntentHandler(AbstractRequestHandler):
     """Handler for Yes Intent."""
 
     def can_handle(self, handler_input):
@@ -338,7 +353,7 @@ class YesIntentHanlder(AbstractRequestHandler):
         return _handle_response(handler_input, speak_output)
 
 
-class NoIntentHanlder(AbstractRequestHandler):
+class NoIntentHandler(AbstractRequestHandler):
     """Handler for No Intent."""
 
     def can_handle(self, handler_input):
@@ -572,8 +587,8 @@ class IntentReflectorHandler(AbstractRequestHandler):
 
         return (
             handler_input.response_builder
-                .speak(speak_output)
-                .response
+            .speak(speak_output)
+            .response
         )
 
 
@@ -599,15 +614,15 @@ class CatchAllExceptionHandler(AbstractExceptionHandler):
             speak_output = data[prompts.ERROR_ACOUSTIC].format(ha_obj.ha_state.get('text'))
             return (
                 handler_input.response_builder
-                    .speak(speak_output)
-                    .ask('')
-                    .response
+                .speak(speak_output)
+                .ask('')
+                .response
             )
         speak_output = data[prompts.ERROR_CONFIG].format(ha_obj.ha_state.get('text'))
         return (
             handler_input.response_builder
-                .speak(speak_output)
-                .response
+            .speak(speak_output)
+            .response
         )
 
 
@@ -643,8 +658,8 @@ sb = SkillBuilder()
 
 # register request / intent handlers
 sb.add_request_handler(LaunchRequestHandler())
-sb.add_request_handler(YesIntentHanlder())
-sb.add_request_handler(NoIntentHanlder())
+sb.add_request_handler(YesIntentHandler())
+sb.add_request_handler(NoIntentHandler())
 sb.add_request_handler(StringIntentHandler())
 sb.add_request_handler(SelectIntentHandler())
 sb.add_request_handler(NumericIntentHandler())
