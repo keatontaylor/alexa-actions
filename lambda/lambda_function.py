@@ -7,15 +7,16 @@ TOKEN = ''  # ADD YOUR LONG LIVED TOKEN IF NEEDED OTHERWISE LEAVE BLANK
 DEBUG = False  # SET TO TRUE IF YOU WANT TO SEE MORE DETAILS IN THE LOGS
 
 """ NO NEED TO EDIT ANYTHING UNDER THE LINE """
+# Built-In Imports
 import sys
 import logging
 import urllib3
 import json
 import isodate
-import prompts
 from typing import Union, Optional
 from urllib3 import HTTPResponse
 
+# 3rd-Party Imports
 from ask_sdk_core.utils import (
     get_account_linking_access_token,
     is_request_type,
@@ -30,6 +31,10 @@ from ask_sdk_core.dispatch_components import AbstractExceptionHandler
 from ask_sdk_core.dispatch_components import AbstractRequestInterceptor
 from ask_sdk_model import SessionEndedReason
 from ask_sdk_model.slu.entityresolution import StatusCode
+
+# Local Imports
+import prompts
+from schemas import HaState, HaStateError
 
 HOME_ASSISTANT_URL = HOME_ASSISTANT_URL.rstrip('/')
 
@@ -98,6 +103,7 @@ def _string_bool_to_bool(value: str) -> bool:
 
 class HomeAssistant(Borg):
     """HomeAssistant Wrapper Class."""
+    ha_state: Optional[Union[HaState, HaStateError]]
 
     def __init__(self, handler_input=None):
         Borg.__init__(self)
@@ -130,7 +136,7 @@ class HomeAssistant(Borg):
             :param prompt: Value obtained from prompts file
             :return:
         """
-        self.ha_state = {"error": True, "text": self.language_strings[prompt]}
+        self.ha_state = HaStateError(text=self.language_strings[prompt])
 
     @staticmethod
     def _build_url(*path: str):
@@ -194,9 +200,9 @@ class HomeAssistant(Borg):
 
         errors: Union[bool, str] = self._check_response_errors(response)
         if errors:
-            self.ha_state = {"error": True, "text": errors}
+            self.ha_state = HaStateError(text=errors)
             logger.debug(self.ha_state)
-            return None
+            return
 
         return response
 
@@ -219,9 +225,9 @@ class HomeAssistant(Borg):
 
         errors: Union[bool, str] = self._check_response_errors(response)
         if errors:
-            self.ha_state = {"error": True, "text": errors}
+            self.ha_state = HaStateError(text=errors)
             logger.debug(self.ha_state)
-            return None
+            return
 
         return response
 
@@ -265,13 +271,12 @@ class HomeAssistant(Borg):
         response = self._decode_response(response)
         if not response:
             return
-
-        self.ha_state = {
-            "error": False,
-            "event_id": response.get('event'),
-            "suppress_confirmation": _string_bool_to_bool(response.get('suppress_confirmation')),
-            "text": response.get('text')
-        }
+        
+        self.ha_state = HaState(
+            event_id=response.get('event_id'),
+            suppress_confirmation=response.get('suppress_confirmation'),
+            text=response.get('text')
+        )
         logger.debug(self.ha_state)
 
     def post_ha_event(self, response: str, response_type: str, **kwargs) -> Optional[str]:
@@ -284,7 +289,7 @@ class HomeAssistant(Borg):
             :return: The text to speak to the user.
         """
         body = {
-            "event_id": self.ha_state.get('event_id'),
+            "event_id": self.ha_state.event_id,
             "event_response": response,
             "event_response_type": response_type
         }
@@ -296,9 +301,9 @@ class HomeAssistant(Borg):
 
         response = self._post('api', 'events', 'alexa_actionable_notification', body=body)
         if not response:
-            return self.ha_state.get('text')
+            return self.ha_state.text
 
-        if not self.ha_state.get('suppress_confirmation'):
+        if not self.ha_state.suppress_confirmation:
             self.clear_state()
             return self.language_strings[prompts.OKAY]
 
@@ -326,8 +331,8 @@ class LaunchRequestHandler(AbstractRequestHandler):
     def handle(self, handler_input):
         """Handler for Skill Launch."""
         ha_obj = HomeAssistant(handler_input)
-        speak_output: Optional[str] = ha_obj.ha_state['text']
-        event_id: Optional[str] = ha_obj.ha_state['event_id']
+        speak_output: Optional[str] = ha_obj.ha_state.text
+        event_id: Optional[str] = ha_obj.ha_state.event_id
 
         handler = handler_input.response_builder.speak(speak_output)
 
@@ -610,15 +615,15 @@ class CatchAllExceptionHandler(AbstractExceptionHandler):
         ha_obj = HomeAssistant()
 
         data = handler_input.attributes_manager.request_attributes["_"]
-        if ha_obj.ha_state and ha_obj.ha_state.get('text'):
-            speak_output = data[prompts.ERROR_ACOUSTIC].format(ha_obj.ha_state.get('text'))
+        if ha_obj.ha_state and ha_obj.ha_state.text:
+            speak_output = data[prompts.ERROR_ACOUSTIC].format(ha_obj.ha_state.text)
             return (
                 handler_input.response_builder
                 .speak(speak_output)
                 .ask('')
                 .response
             )
-        speak_output = data[prompts.ERROR_CONFIG].format(ha_obj.ha_state.get('text'))
+        speak_output = data[prompts.ERROR_CONFIG].format(ha_obj.ha_state.text)
         return (
             handler_input.response_builder
             .speak(speak_output)
