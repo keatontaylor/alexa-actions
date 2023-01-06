@@ -12,7 +12,7 @@ body:
     id: faqissueread
     attributes:
       label: "Did you check our FAQ and Issue/PR for similar issues?"
-      description: "Please know that we are not a S&P500 company with a gigantic client support staff so please do you part so we can help everyone with their issues!"
+      description: "Please do your part so we can help everyone with their issues!"
       options:
         - label: "FAQ checked!"
           required: true
