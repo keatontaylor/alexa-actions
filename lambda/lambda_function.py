@@ -7,15 +7,17 @@ TOKEN = ''  # ADD YOUR LONG LIVED TOKEN IF NEEDED OTHERWISE LEAVE BLANK
 DEBUG = False  # SET TO TRUE IF YOU WANT TO SEE MORE DETAILS IN THE LOGS
 
 """ NO NEED TO EDIT ANYTHING UNDER THE LINE """
-import sys
-import logging
-import urllib3
 import json
-import isodate
-import prompts
+import logging
+import sys
 from typing import Union, Optional
-from urllib3 import HTTPResponse
 
+import isodate
+import urllib3
+from ask_sdk_core.dispatch_components import AbstractExceptionHandler
+from ask_sdk_core.dispatch_components import AbstractRequestHandler
+from ask_sdk_core.dispatch_components import AbstractRequestInterceptor
+from ask_sdk_core.skill_builder import SkillBuilder
 from ask_sdk_core.utils import (
     get_account_linking_access_token,
     is_request_type,
@@ -24,12 +26,11 @@ from ask_sdk_core.utils import (
     get_slot,
     get_slot_value
 )
-from ask_sdk_core.skill_builder import SkillBuilder
-from ask_sdk_core.dispatch_components import AbstractRequestHandler
-from ask_sdk_core.dispatch_components import AbstractExceptionHandler
-from ask_sdk_core.dispatch_components import AbstractRequestInterceptor
 from ask_sdk_model import SessionEndedReason
 from ask_sdk_model.slu.entityresolution import StatusCode
+from urllib3 import HTTPResponse
+
+import prompts
 
 HOME_ASSISTANT_URL = HOME_ASSISTANT_URL.rstrip('/')
 
@@ -83,17 +84,28 @@ def _init_http_pool():
     )
 
 
-def _string_bool_to_bool(value: str) -> bool:
+def _string_to_bool(value: Optional[str], default: bool = False) -> bool:
     """
         Used because we need to convert boolean values passed in strings since
         entity states don't natively support json and are treated as strings.
 
         :param value:
+        :param default:
         :return:
     """
-    if value.lower() == 'true':
+    if isinstance(value, bool):
+        return value
+
+    if not isinstance(value, str):
+        return default
+
+    value = value.lower()
+    if value == 'true':
         return True
-    return False
+    elif value == 'false':
+        return False
+
+    return default
 
 
 class HomeAssistant(Borg):
@@ -269,7 +281,7 @@ class HomeAssistant(Borg):
         self.ha_state = {
             "error": False,
             "event_id": response.get('event'),
-            "suppress_confirmation": _string_bool_to_bool(response.get('suppress_confirmation')),
+            "suppress_confirmation": _string_to_bool(response.get('suppress_confirmation')),
             "text": response.get('text')
         }
         logger.debug(self.ha_state)
