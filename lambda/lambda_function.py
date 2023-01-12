@@ -327,7 +327,7 @@ class HomeAssistant(Borg):
             return
 
         self.ha_state = HaState(
-            event_id=response.get('event_id'),
+            event_id=response.get('event'),
             suppress_confirmation=_string_to_bool(response.get('suppress_confirmation')),
             text=response.get('text')
         )
