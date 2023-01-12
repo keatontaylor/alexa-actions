@@ -7,16 +7,17 @@ TOKEN = ''  # ADD YOUR LONG LIVED TOKEN IF NEEDED OTHERWISE LEAVE BLANK
 DEBUG = False  # SET TO TRUE IF YOU WANT TO SEE MORE DETAILS IN THE LOGS
 
 """ NO NEED TO EDIT ANYTHING UNDER THE LINE """
-import sys
-import logging
-import urllib3
 import json
-import isodate
-import prompts
-from datetime import datetime
+import logging
+import sys
 from typing import Union, Optional
-from urllib3 import HTTPResponse
 
+import isodate
+import urllib3
+from ask_sdk_core.dispatch_components import AbstractExceptionHandler
+from ask_sdk_core.dispatch_components import AbstractRequestHandler
+from ask_sdk_core.dispatch_components import AbstractRequestInterceptor
+from ask_sdk_core.skill_builder import SkillBuilder
 from ask_sdk_core.utils import (
     get_account_linking_access_token,
     is_request_type,
@@ -25,12 +26,11 @@ from ask_sdk_core.utils import (
     get_slot,
     get_slot_value
 )
-from ask_sdk_core.skill_builder import SkillBuilder
-from ask_sdk_core.dispatch_components import AbstractRequestHandler
-from ask_sdk_core.dispatch_components import AbstractExceptionHandler
-from ask_sdk_core.dispatch_components import AbstractRequestInterceptor
 from ask_sdk_model import SessionEndedReason
 from ask_sdk_model.slu.entityresolution import StatusCode
+from urllib3 import HTTPResponse
+
+import prompts
 
 HOME_ASSISTANT_URL = HOME_ASSISTANT_URL.rstrip('/')
 
@@ -53,6 +53,22 @@ RESPONSE_STRING = "ResponseString"
 RESPONSE_DATE_TIME = "ResponseDateTime"
 
 
+def _handle_response(handler, speak_out: Optional[str]):
+    """
+        This function has the purpose of allowing the suspension of the default Okay response
+        so the user can have home assistant do a custom response or follow-up question.
+
+        Fixes issue: #147
+
+        :param handler:
+        :param speak_out:
+        :return:
+    """
+    if speak_out:
+        return handler.response_builder.speak(speak_out).response
+    return handler.response_builder.response
+
+
 class Borg:
     """Borg MonoState Class for State Persistence."""
     _shared_state = {}
@@ -61,11 +77,47 @@ class Borg:
         self.__dict__ = self._shared_state
 
 
+def _init_http_pool():
+    return urllib3.PoolManager(
+        cert_reqs='CERT_REQUIRED' if VERIFY_SSL else 'CERT_NONE',
+        timeout=urllib3.Timeout(connect=10.0, read=10.0)
+    )
+
+
+def _string_to_bool(value: Optional[str], default: bool = False) -> bool:
+    """
+        Used because we need to convert boolean values passed in strings since
+        entity states don't natively support json and are treated as strings.
+
+        :param value:
+        :param default:
+        :return:
+    """
+    if isinstance(value, bool):
+        return value
+
+    if not isinstance(value, str):
+        return default
+
+    value = value.lower()
+    if value == 'true':
+        return True
+    elif value == 'false':
+        return False
+
+    return default
+
+
 class HomeAssistant(Borg):
     """HomeAssistant Wrapper Class."""
 
     def __init__(self, handler_input=None):
         Borg.__init__(self)
+
+        # Define class vars
+        self.ha_state = None
+        self.http = _init_http_pool()
+
         if handler_input:
             self.handler_input = handler_input
 
@@ -76,17 +128,43 @@ class HomeAssistant(Borg):
 
         self.get_ha_state()
 
-    def clear_state(self):
-        """
-            Clear the state of the local Home Assistant object.
-        """
-
-        logger.debug("Clearing Home Assistant local state")
-        self.ha_state = None
-
     def _fetch_token(self):
         logger.debug("Fetching Home Assistant token from Alexa")
         return get_account_linking_access_token(self.handler_input)
+
+    def _set_ha_error(self, prompt: str):
+        """
+            Sets the self.ha_state to the error prompt
+
+            Used when a function fails and alexa should say the error message instead of the
+            intended one
+
+            :param prompt: Value obtained from prompts file
+            :return:
+        """
+        self.ha_state = {"error": True, "text": self.language_strings[prompt]}
+
+    @staticmethod
+    def _build_url(*path: str):
+        """
+            Builds the url from paths given
+
+            :param path:
+            :return:
+        """
+        return f'{HOME_ASSISTANT_URL}/' + '/'.join(path)
+
+    def _get_headers(self):
+        """
+            Returns the request headers
+
+            :return:
+        """
+
+        return {
+            'Authorization': f'Bearer {self.token}',
+            'Content-Type': 'application/json'
+        }
 
     def _check_response_errors(self, response: HTTPResponse) -> Union[bool, str]:
         if response.status == 401:
@@ -108,54 +186,107 @@ class HomeAssistant(Borg):
 
         return False
 
-    def get_ha_state(self) -> None:
+    def _get(self, *path: str, extra_headers: Optional[dict] = None):
         """
-            Updates the local Home Assistant state with the
-            latest state from the Home Assistant server.
+            Performs a request
+
+            :param path:
+            :param headers:
+            :param params:
+            :return:
         """
+        headers = self._get_headers()
+        if extra_headers:
+            headers = headers.update(extra_headers)
 
-        http = urllib3.PoolManager(
-            cert_reqs='CERT_REQUIRED' if VERIFY_SSL else 'CERT_NONE',
-            timeout=urllib3.Timeout(connect=10.0, read=10.0)
-        )
+        url = self._build_url(*path)
+        response = self.http.request('GET', url, headers=headers)
 
-        response = http.request(
-            'GET',
-            f'{HOME_ASSISTANT_URL}/api/states/{INPUT_TEXT_ENTITY}',
-            headers={
-                'Authorization': f'Bearer {self.token}',
-                'Content-Type': 'application/json'
-            },
-        )
+        logger.debug(f'Raw response: {response.data}')
 
         errors: Union[bool, str] = self._check_response_errors(response)
         if errors:
-            self.ha_state = {
-                "error": True,
-                "text": errors
-            }
+            self.ha_state = {"error": True, "text": errors}
             logger.debug(self.ha_state)
+            return None
+
+        return response
+
+    def _post(self, *path: str, body: dict, extra_headers: Optional[dict] = None):
+        """
+            Performs a request
+
+            :param path:
+            :param headers:
+            :param params:
+            :return:
+        """
+        headers = self._get_headers()
+        if extra_headers:
+            headers = headers.update(extra_headers)
+
+        url = self._build_url(*path)
+        response = self.http.request('POST', url, headers=headers,
+                                     body=json.dumps(body).encode('utf-8'))
+
+        errors: Union[bool, str] = self._check_response_errors(response)
+        if errors:
+            self.ha_state = {"error": True, "text": errors}
+            logger.debug(self.ha_state)
+            return None
+
+        return response
+
+    def _decode_response(self, response) -> Optional[dict]:
+        """
+            Decodes the response into a json object
+
+            :param response:
+            :return: Json object or None
+        """
+        decoded_response: Union[str, bytes] = json.loads(response.data.decode('utf-8')).get('state')
+        logger.debug(f'Decoded response: {decoded_response}')
+
+        if decoded_response:
+            return json.loads(decoded_response)
+
+        logger.error("No entity state provided by Home Assistant. "
+                     "Did you forget to add the actionable notification entity?")
+        self._set_ha_error(prompts.ERROR_CONFIG)
+        logger.debug(self.ha_state)
+        return
+
+    def clear_state(self):
+        """
+            Clear the state of the local Home Assistant object.
+        """
+
+        logger.debug("Clearing Home Assistant local state")
+        self.ha_state = None
+
+    def get_ha_state(self):
+        """
+            Updates the local HA state with the servers state
+
+            Used for getting the text to speak, event_id as well as other passable variables
+        """
+        response = self._get('api', 'states', INPUT_TEXT_ENTITY)
+        if not response:
             return
 
-        decoded_response: Union[str, bytes] = json.loads(response.data.decode('utf-8')).get('state')
-        if not decoded_response:
-            logger.error("No entity state provided by Home Assistant. "
-                         "Did you forget to add the actionable notification entity?")
-            self.ha_state = {
-                "error": True,
-                "text": self.language_strings[prompts.ERROR_CONFIG]
-            }
-            logger.debug(self.ha_state)
+        response = self._decode_response(response)
+        if not response:
             return
 
         self.ha_state = {
             "error": False,
-            "event_id": json.loads(decoded_response).get('event'),
-            "text": json.loads(decoded_response).get('text')
+            "event_id": response.get('event'),
+            "suppress_confirmation": _string_to_bool(response.get('suppress_confirmation')),
+            "text": response.get('text')
         }
         logger.debug(self.ha_state)
 
-    def post_ha_event(self, response: str, response_type: str, **kwargs) -> str:
+    def post_ha_event(self, response: str, response_type: str, **kwargs) -> Optional[str]:
         """
             Posts an event to the Home Assistant server.
 
@@ -164,40 +295,27 @@ class HomeAssistant(Borg):
             :param kwargs: Additional parameters to send to the Home Assistant server.
             :return: The text to speak to the user.
         """
-
-        http = urllib3.PoolManager(
-            cert_reqs='CERT_REQUIRED' if VERIFY_SSL else 'CERT_NONE',
-            timeout=urllib3.Timeout(connect=10.0, read=10.0)
-        )
-
-        request_body = {
+        body = {
             "event_id": self.ha_state.get('event_id'),
             "event_response": response,
             "event_response_type": response_type
         }
-        request_body.update(kwargs)
+        body.update(kwargs)
 
         if self.handler_input.request_envelope.context.system.person:
             person_id = self.handler_input.request_envelope.context.system.person.person_id
-            request_body['event_person_id'] = person_id
+            body['event_person_id'] = person_id
 
-        response = http.request(
-            'POST',
-            f'{HOME_ASSISTANT_URL}/api/events/alexa_actionable_notification',
-            headers={
-                'Authorization': f'Bearer {self.token}',
-                'Content-Type': 'application/json'
-            },
-            body=json.dumps(request_body).encode('utf-8')
-        )
+        response = self._post('api', 'events', 'alexa_actionable_notification', body=body)
+        if not response:
+            return self.ha_state.get('text')
 
-        error: Union[bool, str] = self._check_response_errors(response)
-        if error:
-            return error
+        if not self.ha_state.get('suppress_confirmation'):
+            self.clear_state()
+            return self.language_strings[prompts.OKAY]
 
-        speak_output: str = self.language_strings[prompts.OKAY]
         self.clear_state()
-        return speak_output
+        return ''
 
     def get_value_for_slot(self, slot_name):
         """"Get value from slot, also known as the (why does amazon make you do this)"""
@@ -223,23 +341,15 @@ class LaunchRequestHandler(AbstractRequestHandler):
         speak_output: Optional[str] = ha_obj.ha_state['text']
         event_id: Optional[str] = ha_obj.ha_state['event_id']
 
+        handler = handler_input.response_builder.speak(speak_output)
+
         if event_id:
-            return (
-                handler_input.response_builder
-                    .speak(speak_output)
-                    .ask('')
-                    .response
-            )
-        else:
-            ha_obj.clear_state()
-            return (
-                handler_input.response_builder
-                    .speak(speak_output)
-                    .response
-            )
+            handler.ask('')
+
+        return handler.response
 
 
-class YesIntentHanlder(AbstractRequestHandler):
+class YesIntentHandler(AbstractRequestHandler):
     """Handler for Yes Intent."""
 
     def can_handle(self, handler_input):
@@ -252,14 +362,10 @@ class YesIntentHanlder(AbstractRequestHandler):
         ha_obj = HomeAssistant(handler_input)
         speak_output = ha_obj.post_ha_event(RESPONSE_YES, RESPONSE_YES)
 
-        return (
-            handler_input.response_builder
-                .speak(speak_output)
-                .response
-        )
+        return _handle_response(handler_input, speak_output)
 
 
-class NoIntentHanlder(AbstractRequestHandler):
+class NoIntentHandler(AbstractRequestHandler):
     """Handler for No Intent."""
 
     def can_handle(self, handler_input):
@@ -272,11 +378,7 @@ class NoIntentHanlder(AbstractRequestHandler):
         ha_obj = HomeAssistant(handler_input)
         speak_output = ha_obj.post_ha_event(RESPONSE_NO, RESPONSE_NO)
 
-        return (
-            handler_input.response_builder
-                .speak(speak_output)
-                .response
-        )
+        return _handle_response(handler_input, speak_output)
 
 
 class NumericIntentHandler(AbstractRequestHandler):
@@ -296,16 +398,12 @@ class NumericIntentHandler(AbstractRequestHandler):
             raise
         speak_output = ha_obj.post_ha_event(number, RESPONSE_NUMERIC)
 
-        return (
-            handler_input.response_builder
-                .speak(speak_output)
-                .response
-        )
+        return _handle_response(handler_input, speak_output)
 
 
 class StringIntentHandler(AbstractRequestHandler):
     """Handler for String Intent."""
-    
+
     def can_handle(self, handler_input):
         """Check for Select Intent."""
         return is_intent_name('String')(handler_input)
@@ -319,11 +417,7 @@ class StringIntentHandler(AbstractRequestHandler):
 
         speak_output = ha_obj.post_ha_event(strings, RESPONSE_STRING)
 
-        return (
-            handler_input.response_builder
-                .speak(speak_output)
-                .response
-        )
+        return _handle_response(handler_input, speak_output)
 
 
 class SelectIntentHandler(AbstractRequestHandler):
@@ -347,11 +441,7 @@ class SelectIntentHandler(AbstractRequestHandler):
         data = handler_input.attributes_manager.request_attributes["_"]
         speak_output = data[prompts.SELECTED].format(selection)
 
-        return (
-            handler_input.response_builder
-                .speak(speak_output)
-                .response
-        )
+        return _handle_response(handler_input, speak_output)
 
 
 class DurationIntentHandler(AbstractRequestHandler):
@@ -372,11 +462,7 @@ class DurationIntentHandler(AbstractRequestHandler):
         speak_output = ha_obj.post_ha_event(
             isodate.parse_duration(duration).total_seconds(), RESPONSE_DURATION)
 
-        return (
-            handler_input.response_builder
-                .speak(speak_output)
-                .response
-        )
+        return _handle_response(handler_input, speak_output)
 
 
 class DateTimeIntentHandler(AbstractRequestHandler):
@@ -405,11 +491,7 @@ class DateTimeIntentHandler(AbstractRequestHandler):
             **self._parse_time(time)
         }), RESPONSE_DATE_TIME)
 
-        return (
-            handler_input.response_builder
-            .speak(speak_output)
-            .response
-        )
+        return _handle_response(handler_input, speak_output)
 
     @staticmethod
     def _parse_date(date: str) -> dict:
@@ -477,11 +559,7 @@ class CancelOrStopIntentHandler(AbstractRequestHandler):
         data = handler_input.attributes_manager.request_attributes["_"]
         speak_output = data[prompts.STOP_MESSAGE]
 
-        return (
-            handler_input.response_builder
-                .speak(speak_output)
-                .response
-        )
+        return _handle_response(handler_input, speak_output)
 
 
 class SessionEndedRequestHandler(AbstractRequestHandler):
@@ -521,8 +599,8 @@ class IntentReflectorHandler(AbstractRequestHandler):
 
         return (
             handler_input.response_builder
-                .speak(speak_output)
-                .response
+            .speak(speak_output)
+            .response
         )
 
 
@@ -548,15 +626,15 @@ class CatchAllExceptionHandler(AbstractExceptionHandler):
             speak_output = data[prompts.ERROR_ACOUSTIC].format(ha_obj.ha_state.get('text'))
             return (
                 handler_input.response_builder
-                    .speak(speak_output)
-                    .ask('')
-                    .response
+                .speak(speak_output)
+                .ask('')
+                .response
             )
         speak_output = data[prompts.ERROR_CONFIG].format(ha_obj.ha_state.get('text'))
         return (
             handler_input.response_builder
-                .speak(speak_output)
-                .response
+            .speak(speak_output)
+            .response
         )
 
 
@@ -592,8 +670,8 @@ sb = SkillBuilder()
 
 # register request / intent handlers
 sb.add_request_handler(LaunchRequestHandler())
-sb.add_request_handler(YesIntentHanlder())
-sb.add_request_handler(NoIntentHanlder())
+sb.add_request_handler(YesIntentHandler())
+sb.add_request_handler(NoIntentHandler())
 sb.add_request_handler(StringIntentHandler())
 sb.add_request_handler(SelectIntentHandler())
 sb.add_request_handler(NumericIntentHandler())
