@@ -1,4 +1,4 @@
-boto3==1.9.216
-ask-sdk-core==1.11.0
 isodate==0.6.0
 pydantic==1.10.4
+boto3
+ask-sdk-core
