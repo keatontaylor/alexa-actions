@@ -69,6 +69,20 @@
     "STOP_MESSAGE": "Tchau!",
     "WELCOME_MESSAGE": "Bem vindo ao {}. A entrada de texto é: {}"
   },
+  "es": {
+    "ERROR_401": "Parece que no tengo permisos para acceder a home assistant. Por favor, comprueba el enlace de cuenta o el token de acceso y vuelve a intentarlo.",
+    "ERROR_404": "Parece que no puedo encontrar la entidad de texto de entrada. Por favor, comprueba que la has añadido a home assistant y vuelve a intentarlo.",
+    "ERROR_400": "No puedo comunicarme con home assistant. Por favor, comprueba los registros de Amazon CloudWatch en la consola de desarrollo de habilidades personalizadas.",
+    "ERROR_ACOUSTIC": "Lo siento, no he entendido... <break time='200ms'/> {}",
+    "ERROR_CONFIG": "Lo siento, tengo problemas, por favor, comprueba tu configuración en la habilidad personalizada y vuelve a intentarlo.",
+    "HELP_MESSAGE": "Esta skill debería de responder solo cuando se invoque desde home assistant.",
+    "OKAY": "Okay",
+    "STRING": "Has seleccionado {}",
+    "SELECTED": "Has seleccionado {}",
+    "SKILL_NAME": "home assistant custom actions",
+    "STOP_MESSAGE": "Adiós!",
+    "WELCOME_MESSAGE": "Bienvenido a {}. El texto de entrada es: {}"
+  },
   "ft-FR": {
     "SKILL_NAME": "Actionable notifications"
   },
@@ -80,5 +94,8 @@
   },
   "pt-BR": {
     "SKILL_NAME": "Ações customizadas"
+  },
+  "es-ES": {
+    "SKILL_NAME": "Acciones personalizadas"
   }
 }

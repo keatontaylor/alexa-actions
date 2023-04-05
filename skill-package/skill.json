@@ -1,7 +1,7 @@
 {
   "manifest": {
     "apis": {
-      "custom": { }
+      "custom": {}
     },
     "manifestVersion": "1.0",
     "publishingInformation": {
@@ -19,6 +19,9 @@
           "name": "Actionable notifications"
         },
         "pt-BR": {
+          "name": "Actionable notifications"
+        },
+        "es-ES": {
           "name": "Actionable notifications"
         }
       }

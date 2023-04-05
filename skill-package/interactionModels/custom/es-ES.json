@@ -1,0 +1,116 @@
+{
+  "interactionModel": {
+    "languageModel": {
+      "invocationName": "actionable notifications",
+      "intents": [
+        {
+          "name": "AMAZON.CancelIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.HelpIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.StopIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.NavigateHomeIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.YesIntent",
+          "samples": ["si"]
+        },
+        {
+          "name": "AMAZON.NoIntent",
+          "samples": ["no"]
+        },
+        {
+          "name": "String",
+          "slots": [
+            {
+              "name": "Strings",
+              "type": "AMAZON.SearchQuery"
+            }
+          ],
+          "samples": [" {Strings}"]
+        },
+        {
+          "name": "Select",
+          "slots": [
+            {
+              "name": "Selections",
+              "type": "Selections"
+            }
+          ],
+          "samples": ["{Selections}"]
+        },
+        {
+          "name": "Number",
+          "slots": [
+            {
+              "name": "Numbers",
+              "type": "AMAZON.FOUR_DIGIT_NUMBER"
+            }
+          ],
+          "samples": ["{Numbers}"]
+        },
+        {
+          "name": "Duration",
+          "slots": [
+            {
+              "name": "Durations",
+              "type": "AMAZON.DURATION"
+            }
+          ],
+          "samples": ["{Durations}"]
+        },
+        {
+          "name": "Date",
+          "slots": [
+            {
+              "name": "Dates",
+              "type": "AMAZON.DATE"
+            },
+            {
+              "name": "Times",
+              "type": "AMAZON.TIME"
+            }
+          ],
+          "samples": ["{Dates} a las {Times}", "a las {Times}", "{Dates}"]
+        }
+      ],
+      "types": [
+        {
+          "values": [
+            {
+              "name": {
+                "value": "Amazon Prime",
+                "synonyms": ["Amazon", "Amazon Video"]
+              }
+            },
+            {
+              "name": {
+                "value": "Hulu"
+              }
+            },
+            {
+              "name": {
+                "value": "YouTube"
+              }
+            },
+            {
+              "name": {
+                "value": "Netflix"
+              }
+            }
+          ],
+          "name": "Selections"
+        }
+      ]
+    }
+  },
+  "version": "1"
+}
