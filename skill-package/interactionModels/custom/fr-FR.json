@@ -61,7 +61,7 @@
           "slots": [
             {
               "name": "Numbers",
-              "type": "AMAZON.FOUR_DIGIT_NUMBER"
+              "type": "AMAZON.NUMBER"
             }
           ],
           "samples": [
