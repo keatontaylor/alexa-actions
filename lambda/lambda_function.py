@@ -35,26 +35,12 @@ from urllib3 import HTTPResponse
 # Local Imports
 import prompts
 from schemas import HaState, HaStateError
+from utils import get_logger
+from const import *
 
 HOME_ASSISTANT_URL = HOME_ASSISTANT_URL.rstrip('/')
 
-logger = logging.getLogger(__name__)
-logger.addHandler(logging.StreamHandler(sys.stdout))
-if DEBUG:
-    logger.setLevel(logging.DEBUG)
-else:
-    logger.setLevel(logging.INFO)
-
-INPUT_TEXT_ENTITY = "input_text.alexa_actionable_notification"
-
-RESPONSE_YES = "ResponseYes"
-RESPONSE_NO = "ResponseNo"
-RESPONSE_NONE = "ResponseNone"
-RESPONSE_SELECT = "ResponseSelect"
-RESPONSE_NUMERIC = "ResponseNumeric"
-RESPONSE_DURATION = "ResponseDuration"
-RESPONSE_STRING = "ResponseString"
-RESPONSE_DATE_TIME = "ResponseDateTime"
+logger = get_logger(DEBUG)
 
 
 def _handle_response(handler, speak_out: Optional[str]):
@@ -62,7 +48,7 @@ def _handle_response(handler, speak_out: Optional[str]):
         This function has the purpose of allowing the suspension of the default Okay response
         so the user can have home assistant do a custom response or follow-up question.
 
-        Fixes issue: #147
+        Fixed issue: #147
 
         :param handler:
         :param speak_out:
