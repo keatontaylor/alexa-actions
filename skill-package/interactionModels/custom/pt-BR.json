@@ -40,11 +40,11 @@
           "slots": [
             {
               "name": "Strings",
-              "type": "AMAZON.SearchQuery"
+              "type": "AMAZON.Person"
             }
           ],
           "samples": [
-            " {Strings}"
+            "{Strings}"
           ]
         },
         {

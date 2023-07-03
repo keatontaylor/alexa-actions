@@ -21,15 +21,11 @@
         },
         {
           "name": "AMAZON.YesIntent",
-          "samples": [
-            "ja"
-          ]
+          "samples": ["si"]
         },
         {
           "name": "AMAZON.NoIntent",
-          "samples": [
-            "nein"
-          ]
+          "samples": ["no"]
         },
         {
           "name": "String",
@@ -39,9 +35,7 @@
               "type": "AMAZON.Person"
             }
           ],
-          "samples": [
-            "{Strings}"
-          ]
+          "samples": ["{Strings}"]
         },
         {
           "name": "Select",
@@ -51,9 +45,7 @@
               "type": "Selections"
             }
           ],
-          "samples": [
-            "{Selections}"
-          ]
+          "samples": ["{Selections}"]
         },
         {
           "name": "Number",
@@ -63,9 +55,7 @@
               "type": "AMAZON.FOUR_DIGIT_NUMBER"
             }
           ],
-          "samples": [
-            "{Numbers}"
-          ]
+          "samples": ["{Numbers}"]
         },
         {
           "name": "Duration",
@@ -75,9 +65,7 @@
               "type": "AMAZON.DURATION"
             }
           ],
-          "samples": [
-            "{Durations}"
-          ]
+          "samples": ["{Durations}"]
         },
         {
           "name": "Date",
@@ -91,11 +79,7 @@
               "type": "AMAZON.TIME"
             }
           ],
-          "samples": [
-            "{Dates} um {Times}",
-            "um {Times}",
-            "{Dates}"
-          ]
+          "samples": ["{Dates} a las {Times}", "a las {Times}", "{Dates}"]
         }
       ],
       "types": [
@@ -104,10 +88,7 @@
             {
               "name": {
                 "value": "Amazon Prime",
-                "synonyms": [
-                  "Amazon",
-                  "Amazon Video"
-                ]
+                "synonyms": ["Amazon", "Amazon Video"]
               }
             },
             {
