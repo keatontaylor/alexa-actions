@@ -41,17 +41,17 @@ script:
             - integration: alexa_media
               domain: media_player
     suppress_confirmation:
-    name: Suppress Confirmation
-    description: Set true if you want to suppress 'okay' confirmation
-    required: true
-    example: "true"
-    selector:
-      boolean: null
+      name: Suppress Confirmation
+      description: Set true if you want to suppress 'okay' confirmation
+      required: true
+      example: "true"
+      selector:
+        boolean: null
   sequence:
     - service: input_text.set_value
       data_template:
         entity_id: input_text.alexa_actionable_notification
-        value: '{"text": "{{ text }}", "event": "{{ event_id }}", "suppress_confirmation": "{{ suppress_confirmation }}"}'
+        value: '{"text": "{{ message }}", "event": "{{ event_id }}", "suppress_confirmation": "{{ suppress_confirmation }}"}'
     - service: media_player.play_media
       data_template:
         entity_id: "{{ alexa_device }}"
