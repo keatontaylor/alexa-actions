@@ -12,18 +12,41 @@ script:
   alias: activate_alexa_actionable_notification
   description: Activates an actionable notification on a specific echo device
   fields:
-    text:
-      description: The text you would like alexa to speak.
-      example: 'What would you like the thermostat set to?'
+    message:
+      name: Message
+      description: The content of the message that you want to be announced.
+      required: true
+      example: "Would you like the heating turned off?"
+      selector:
+        text:
+          type: text
+          multiline: false
     event_id:
+      name: Event ID
       description: Correlation ID for event responses
-      example: 'ask_for_temperature'
+      required: true
+      example: "ask_for_temperature"
+      selector:
+        text:
+          type: text
+          multiline: false
     alexa_device:
+      name: Alexa Device
       description: Alexa device you want to trigger
-      example: 'media_player.bedroom_echo'
+      required: true
+      example: "media_player.bedroom_echo"
+      selector:
+        entity:
+          filter:
+            - integration: alexa_media
+              domain: media_player
     suppress_confirmation:
-      description: Set true if you want to suppress 'okay' confirmation
-      example: 'true'
+    name: Suppress Confirmation
+    description: Set true if you want to suppress 'okay' confirmation
+    required: true
+    example: "true"
+    selector:
+      boolean: null
   sequence:
     - service: input_text.set_value
       data_template:
