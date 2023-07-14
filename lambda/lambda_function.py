@@ -1,4 +1,4 @@
-# VERSION 0.9.1
+# VERSION 0.9.2
 
 # UPDATE THESE VARIABLES WITH YOUR CONFIG
 HOME_ASSISTANT_URL = 'https://yourinstall.com'  # REPLACE WITH THE URL FOR YOUR HOME ASSISTANT
@@ -282,7 +282,7 @@ class HomeAssistant(Borg):
         logger.debug(f'Decoded response: {decoded_response}')
 
         if decoded_response:
-            return json.loads(decoded_response)
+            return json.loads(response.data.decode('utf-8'))
 
         logger.error("No entity state provided by Home Assistant. "
                      "Did you forget to add the actionable notification entity?")
@@ -313,9 +313,9 @@ class HomeAssistant(Borg):
             return
 
         self.ha_state = HaState(
-            event_id=response.get('event'),
+            event_id=response.get('event_id'),
             suppress_confirmation=_string_to_bool(response.get('suppress_confirmation')),
-            text=response.get('text')
+            text=response.get('state')
         )
         logger.debug(self.ha_state)
 
