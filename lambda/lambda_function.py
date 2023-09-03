@@ -59,14 +59,6 @@ def _handle_response(handler, speak_out: Optional[str]):
     return handler.response_builder.response
 
 
-class Borg:
-    """Borg MonoState Class for State Persistence."""
-    _shared_state = {}
-
-    def __init__(self):
-        self.__dict__ = self._shared_state
-
-
 def _init_http_pool():
     return urllib3.PoolManager(
         cert_reqs='CERT_REQUIRED' if VERIFY_SSL else 'CERT_NONE',
@@ -98,13 +90,11 @@ def _string_to_bool(value: Optional[str], default: bool = False) -> bool:
     return default
 
 
-class HomeAssistant(Borg):
+class HomeAssistant:
     """HomeAssistant Wrapper Class."""
     ha_state: Optional[Union[HaState, HaStateError]]
 
     def __init__(self, handler_input=None):
-        Borg.__init__(self)
-
         # Define class vars
         self.ha_state = None
         self.http = _init_http_pool()
