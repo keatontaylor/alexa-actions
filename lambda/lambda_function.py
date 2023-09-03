@@ -238,22 +238,6 @@ class HomeAssistant:
         return
 
 
-    def get_ha_state(self):
-        """
-            Updates the local HA state with the servers state
-
-            Used for getting the text to speak, event_id as well as other passable variables
-        """
-        response = self._get('api', 'states', INPUT_TEXT_ENTITY)
-        if not response:
-            return
-
-        response = self._decode_response(response)
-        if not response:
-            return
-
-        return response
-
     def _decode_response(self, response) -> Optional[dict]:
         """
             Decodes the response into a json object
