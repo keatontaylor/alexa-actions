@@ -78,13 +78,11 @@ class HomeAssistant:
     """HomeAssistant Wrapper Class."""
     ha_state: Optional[Union[HaState, HaStateError]]
 
-    def __init__(self, handler_input=None):
+    def __init__(self, handler_input):
         # Define class vars
         self.ha_state = None
         self.http = _init_http_pool()
-
-        if handler_input:
-            self.handler_input = handler_input
+        self.handler_input = handler_input
 
         # Gets data from langua_strings.json file according to the locale
         self.language_strings = self.handler_input.attributes_manager.request_attributes["_"]
@@ -578,7 +576,7 @@ class CatchAllExceptionHandler(AbstractExceptionHandler):
         """Handle exception."""
         logger.info('Catch All Exception triggered')
         logger.error(exception, exc_info=True)
-        ha_obj = HomeAssistant()
+        ha_obj = HomeAssistant(handler_input)
 
         data = handler_input.attributes_manager.request_attributes["_"]
         if ha_obj.ha_state and ha_obj.ha_state.text:
