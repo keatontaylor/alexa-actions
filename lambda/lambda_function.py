@@ -218,25 +218,6 @@ class HomeAssistant:
 
         return response
 
-    def _decode_response(self, response) -> Optional[dict]:
-        """
-            Decodes the response into a json object
-
-            :param response:
-            :return: Json object or None
-        """
-        decoded_response: Union[str, bytes] = json.loads(response.data.decode('utf-8')).get('state')
-        logger.debug(f'Decoded response: {decoded_response}')
-
-        if decoded_response:
-            return json.loads(decoded_response)
-
-        logger.error("No entity state provided by Home Assistant. "
-                     "Did you forget to add the actionable notification entity?")
-        self._set_ha_error(prompts.ERROR_CONFIG)
-        logger.debug(self.ha_state)
-        return
-
 
     def _decode_response(self, response) -> Optional[dict]:
         """
