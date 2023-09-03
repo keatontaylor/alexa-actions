@@ -237,13 +237,6 @@ class HomeAssistant:
         logger.debug(self.ha_state)
         return
 
-    def clear_state(self):
-        """
-            Clear the state of the local Home Assistant object.
-        """
-
-        logger.debug("Clearing Home Assistant local state")
-        self.ha_state = None
 
     def get_ha_state(self):
         """
