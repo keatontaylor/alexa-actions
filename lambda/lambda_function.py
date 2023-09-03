@@ -304,16 +304,8 @@ class LaunchRequestHandler(AbstractRequestHandler):
         """Handler for Skill Launch."""
         ha_obj = HomeAssistant(handler_input)
         speak_output: Optional[str] = ha_obj.ha_state.text
-        event_id: Optional[str] = ha_obj.ha_state.event_id
 
-        handler = handler_input.response_builder.speak(speak_output)
-
-        handler = handler_input.response_builder.speak(speak_output)
-
-        if event_id:
-            handler.ask('')
-
-        return handler.response
+        return handler_input.response_builder.speak(speak_output).ask('').response
 
 
 class YesIntentHandler(AbstractRequestHandler):
