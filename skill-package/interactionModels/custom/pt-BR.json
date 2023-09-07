@@ -40,7 +40,7 @@
           "slots": [
             {
               "name": "Strings",
-              "type": "AMAZON.Person"
+              "type": "AMAZON.FirstName"
             }
           ],
           "samples": [
