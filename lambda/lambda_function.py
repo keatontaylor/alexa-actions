@@ -622,7 +622,6 @@ class SessionEndedRequestHandler(AbstractRequestHandler):
         """
         logger.info('Session Ended Request Handler triggered')
         ha_obj = HomeAssistant(handler_input)
-        reason = handler_input.request_envelope.request.reason
 
         ha_obj.post_ha_event(
             RESPONSE_NONE,
