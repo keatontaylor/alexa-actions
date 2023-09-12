@@ -609,8 +609,11 @@ class SessionEndedRequestHandler(AbstractRequestHandler):
         logger.info('Session Ended Request Handler triggered')
         ha_obj = HomeAssistant(handler_input)
         reason = handler_input.request_envelope.request.reason
-        if reason == SessionEndedReason.EXCEEDED_MAX_REPROMPTS or reason == SessionEndedReason.USER_INITIATED:
-            ha_obj.post_ha_event(RESPONSE_NONE, RESPONSE_NONE)
+
+        ha_obj.post_ha_event(
+            RESPONSE_NONE,
+            handler_input.request_envelope.request.reason
+        )
 
         return handler_input.response_builder.response
 
