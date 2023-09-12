@@ -274,50 +274,6 @@ class HomeAssistant(Borg):
         if not response:
             return
 
-        return response
-
-    def _decode_response(self, response) -> Optional[dict]:
-        """
-        Decodes the response into a json object
-
-        :param response:
-        :return: Json object or None
-        """
-        decoded_response: Union[str, bytes] = json.loads(response.data.decode("utf-8")).get("state")
-        logger.debug(f"Decoded response: {decoded_response}")
-
-        if decoded_response:
-            return json.loads(decoded_response)
-
-        logger.error(
-            "No entity state provided by Home Assistant. " "Did you forget to add the actionable notification entity?"
-        )
-        self._set_ha_error(prompts.ERROR_CONFIG)
-        logger.debug(self.ha_state)
-        return
-
-    def clear_state(self):
-        """
-        Clear the state of the local Home Assistant object.
-        """
-
-        logger.debug("Clearing Home Assistant local state")
-        self.ha_state = None
-
-    def get_ha_state(self):
-        """
-        Updates the local HA state with the servers state
-
-        Used for getting the text to speak, event_id as well as other passable variables
-        """
-        response = self._get("api", "states", INPUT_TEXT_ENTITY)
-        if not response:
-            return
-
-        response = self._decode_response(response)
-        if not response:
-            return
-
         self.ha_state = HaState(
             event_id=response.get("event"),
             suppress_confirmation=_string_to_bool(response.get("suppress_confirmation")),
