@@ -605,7 +605,21 @@ class SessionEndedRequestHandler(AbstractRequestHandler):
         return is_request_type('SessionEndedRequest')(handler_input)
 
     def handle(self, handler_input):
-        """Clean up and stop the skill."""
+        """
+        Clean up and stop the skill.
+
+        Sends a RESPONSE_NONE event to Home Assistant with the reason for the
+        Session to end.
+        Possible reasons as of September 2023:
+        - ERROR
+        - EXCEEDED_MAX_REPROMPTS
+        - USER_INITIATED
+
+        @see https://alexa-skills-kit-python-sdk.readthedocs.io/en/latest/models/ask_sdk_model.html#module-ask_sdk_model.session_ended_reason
+
+        @param handler_input:
+        @return:
+        """
         logger.info('Session Ended Request Handler triggered')
         ha_obj = HomeAssistant(handler_input)
         reason = handler_input.request_envelope.request.reason
