@@ -1,0 +1,31 @@
+#  Copyright (c) 2023.
+#  All rights reserved to the creator of the following script/program/app, please do not
+#  use or distribute without prior authorization from the creator.
+#  Creator: Antonio Manuel Nunes Goncalves
+#  Email: amng835@gmail.com
+#  LinkedIn: https://www.linkedin.com/in/antonio-manuel-goncalves-983926142/
+#  Github: https://github.com/DEADSEC-SECURITY
+name: "Formatting & Linting"
+
+on: [push, pull_request]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install ruff
+      - name: Run Ruff
+        run: ruff check --format=github .
+  format:
+    runs-on: ubuntu-latest
+    steps:
+        - uses: actions/checkout@v3
+        - uses: psf/black@stable
