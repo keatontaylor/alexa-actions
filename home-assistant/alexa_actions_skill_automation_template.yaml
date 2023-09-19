@@ -218,7 +218,6 @@ action:
           - condition: trigger
             id: AlexaNoneID
         sequence: !input 'AlexaResponceActionIgnore'
-        
       - conditions:
           - condition: trigger
             id: AlexaNoID
