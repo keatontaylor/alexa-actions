@@ -1,0 +1,227 @@
+
+blueprint:
+  name: Mossys [Alexa Actionable notifications Blueprint]
+  description: >
+    Created by: https://github.com/leap-it
+    This project is intended to be used with the HACS integration [Alexa media player] and
+    Keaton Taylor's fantastic code [Alexa Actionable notifications] - found here https://github.com/keatontaylor/alexa-actions
+        small discriptive of the code : "This allows you to not only talk using you alexa device but also get responses and take actions accordingly!"
+
+    This blueprint relies on a toggle Helper (boolean) as a trigger, there are two reasons for this.
+    
+    - I can action this from any other routine / automation  just by turning the toggle value to on. 
+      so if i turn a light on i have an automation to turn the toggle on
+    
+    - This also allows me to have the automation repeat its self, depending on your answer in the action just turn the toggle on and off again and the routine will restart
+      this prevents from having to turn the phisical device on and off (Why? ex: light would flicker)
+      Lets say i use this to turn the cellar light off. 
+      when i turn the light on, I have an automation turn a helper toggle to on as well and obviously when i turn the light off the toggle will be switched to off too.
+      this automation is triggered by this toggle and then waits a specified time to let Alexa ask, in this case "is someone still in the cellar" if no one answers the light will be turned off.
+      if i answer yes then the toggle will be turned off then on again. and the automation restarts.
+      note i have not hard coded the turning on and off of the trigger as this could be done either on yes or no responce, so i can chose myself and do this via the toggle service.
+
+  domain: automation
+  input:
+    AlexaResponceTrigger:
+      name: Trigger action
+      description: The Input Toggle event to listen to (turns to on)
+      selector:
+       entity:
+          domain: input_boolean
+          
+    
+    AlexaResponceTriggerTimer:
+      name: Wait time on responce toggle
+      description: 'When the toggle is active how log before alexa asks you something.
+      
+      0 = immediate.' 
+
+      default: 0
+      selector:
+        number:
+          min: 0
+          max: 3600
+          unit_of_measurement: seconds
+          step: 1
+          mode: slider          
+
+    after_time:
+      name: Start time
+      description: The time of day from which the automation is allowed to run
+      selector:
+        time: {}
+      default: 0:00:00
+
+    before_time:
+      name: End time
+      description: The time of day to which the automation is allowed to run
+      selector:
+        time: {}
+      default: 23:59:59
+
+    weekday:
+      name: Day of the week to allow notifications
+      description: 'Change options if you want to include or exclude any specific day.
+        
+        All days are selected by default.'
+      default:
+      - mon
+      - tue
+      - wed
+      - thu
+      - fri
+      - sat
+      - sun
+      selector:
+        select:
+          options:
+          - label: Monday
+            value: mon
+          - label: Tuesday
+            value: tue
+          - label: Wednesday
+            value: wed
+          - label: Thursday
+            value: thu
+          - label: Friday
+            value: fri
+          - label: Saturday
+            value: sat
+          - label: Sunday
+            value: sun
+          custom_value: false
+          multiple: true
+
+    AlexaStopTrigger:
+      name: (OPTIONAL) Automation Condition
+      description: This is an optional trigger that needs to be ON for the automation to work
+      default: ''
+      selector:
+        entity:    
+
+    AlexaBlockTrigger:
+      name: (OPTIONAL) Blocking entity
+      description: If this entity's state is on, it will prevent the automation from running. E.g. sleepmode, guestmode or away mode.
+      default: ''
+      selector:
+        entity:
+
+    AlexaEeventId:
+      name: (Unique) Alexa envent ID
+      description: Alexa listens for this unique Id to follow this Routine
+      default: actionable_notification_      
+
+
+    AlexaEventMessage:
+      name: Alexa's Question
+      description: What does alexa ask you
+      default: What should i ask you?     
+
+    AlexaOkay:
+      name: Allow confirmation response
+      description: When 'true' Alexa will responf "Okay" to aknowlage your responce.
+      default: true
+      selector:
+        boolean: {}
+        
+    AlexaNotifier:
+      name: Alexa Device
+      description: whitch Alexadevice to use
+      selector:
+        entity:
+          domain: media_player  
+
+    AlexaResponceActionYes:
+      name: Action to take when aswer is "YES"
+      default: 
+      selector:
+        action: 
+
+    AlexaResponceActionNo:
+      name: Action to take when answer is "NO"
+      default: 
+      selector:
+        action: 
+        
+    AlexaResponceActionIgnore:
+      name: Action to take when "IGNORED"
+      default: 
+      selector:
+        action: 
+
+  
+variables:
+  condition_entity: !input AlexaStopTrigger
+  blocker_entity: !input AlexaBlockTrigger
+
+
+trigger:
+  - platform: state
+    entity_id:
+      - !input 'AlexaResponceTrigger'
+    id: AlexaTriggerID
+    for:
+      seconds: !input 'AlexaResponceTriggerTimer'
+    to: "on"
+
+  - platform: event
+    event_type: alexa_actionable_notification
+    event_data:
+      event_id: !input 'AlexaEeventId'
+      event_response_type: ResponseYes
+    id: AlexaYesID
+
+  - platform: event
+    event_type: alexa_actionable_notification
+    event_data:
+      event_id: !input 'AlexaEeventId'
+      event_response_type: ResponseNone
+    id: AlexaNoneID
+
+  - platform: event
+    event_type: alexa_actionable_notification
+    event_data:
+      event_id: !input 'AlexaEeventId'
+      event_response_type: ResponseNo
+    id: AlexaNoID   
+
+
+condition:
+  - condition: time
+    after: !input 'after_time'
+    before: !input 'before_time'
+    weekday: !input weekday
+    
+  - condition: template
+    value_template: "{{ (condition_entity == 'none') or (states[condition_entity].state == 'on') }}"
+
+  - condition: template
+    value_template: "{{ (blocker_entity == 'none') or (states[blocker_entity].state == 'off') }}"
+
+action:
+  - choose:
+      - conditions:
+          - condition: trigger
+            id: AlexaTriggerID
+        sequence:
+          - service: script.activate_alexa_actionable_notification
+            data:
+              message: !input 'AlexaEventMessage'
+              event_id: !input 'AlexaEeventId'
+              alexa_device: !input 'AlexaNotifier'
+              suppress_confirmation: !input 'AlexaOkay'
+      - conditions:
+          - condition: trigger
+            id: AlexaYesID
+        sequence: !input 'AlexaResponceActionYes'
+      - conditions:
+          - condition: trigger
+            id: AlexaNoneID
+        sequence: !input 'AlexaResponceActionIgnore'
+        
+      - conditions:
+          - condition: trigger
+            id: AlexaNoID
+        sequence: !input 'AlexaResponceActionNo'
+        
+mode: single
