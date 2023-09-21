@@ -1,5 +1,4 @@
 # VERSION 0.9.1
-from requests import Response
 
 # UPDATE THESE VARIABLES WITH YOUR CONFIG
 HOME_ASSISTANT_URL = "https://yourinstall.com"  # REPLACE WITH THE URL FOR YOUR HOME ASSISTANT
@@ -15,6 +14,7 @@ from typing import Union, Optional
 # 3rd-Party Imports
 import isodate
 import requests
+from requests import Response
 from ask_sdk_core.dispatch_components import AbstractExceptionHandler
 from ask_sdk_core.dispatch_components import AbstractRequestHandler
 from ask_sdk_core.dispatch_components import AbstractRequestInterceptor
