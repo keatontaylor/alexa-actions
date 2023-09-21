@@ -1,4 +1,5 @@
 # VERSION 0.9.1
+from requests import Response
 
 # UPDATE THESE VARIABLES WITH YOUR CONFIG
 HOME_ASSISTANT_URL = "https://yourinstall.com"  # REPLACE WITH THE URL FOR YOUR HOME ASSISTANT
@@ -13,7 +14,7 @@ from typing import Union, Optional
 
 # 3rd-Party Imports
 import isodate
-import urllib3
+import requests
 from ask_sdk_core.dispatch_components import AbstractExceptionHandler
 from ask_sdk_core.dispatch_components import AbstractRequestHandler
 from ask_sdk_core.dispatch_components import AbstractRequestInterceptor
@@ -28,7 +29,6 @@ from ask_sdk_core.utils import (
 )
 from ask_sdk_model import SessionEndedReason
 from ask_sdk_model.slu.entityresolution import StatusCode
-from urllib3 import HTTPResponse
 
 # Local Imports
 import prompts
@@ -76,12 +76,6 @@ class Borg:
         self.__dict__ = self._shared_state
 
 
-def _init_http_pool():
-    return urllib3.PoolManager(
-        cert_reqs="CERT_REQUIRED" if VERIFY_SSL else "CERT_NONE", timeout=urllib3.Timeout(connect=10.0, read=10.0)
-    )
-
-
 def _string_to_bool(value: Optional[str], default: bool = False) -> bool:
     """
     Used because we need to convert boolean values passed in strings since
@@ -116,7 +110,6 @@ class HomeAssistant(Borg):
 
         # Define class vars
         self.ha_state = None
-        self.http = _init_http_pool()
 
         if handler_input:
             self.handler_input = handler_input
@@ -163,26 +156,28 @@ class HomeAssistant(Borg):
 
         return {"Authorization": f"Bearer {self.token}", "Content-Type": "application/json"}
 
-    def _check_response_errors(self, response: HTTPResponse) -> Union[bool, str]:
-        if response.status == 401:
+    def _check_response_errors(self, response: Response) -> Union[bool, str]:
+        if response.status_code == 401:
             logger.error("401 Error from Home Assistant. Activate debug mode to see more details.")
-            logger.debug(response.data)
+            logger.debug(response.content)
             speak_output = "Error 401 " + self.language_strings[prompts.ERROR_401]
             return speak_output
-        if response.status == 404:
+        if response.status_code == 404:
             logger.error("404 Error from Home Assistant. Activate debug mode to see more details.")
-            logger.debug(response.data)
+            logger.debug(response.content)
             speak_output = "Error 404 " + self.language_strings[prompts.ERROR_404]
             return speak_output
-        if response.status >= 400:
-            logger.error(f"{response.status} Error from Home Assistant. " f"Activate debug mode to see more details.")
-            logger.debug(response.data)
-            speak_output = f"Error {response.status}, {self.language_strings[prompts.ERROR_400]}"
+        if response.status_code >= 400:
+            logger.error(
+                f"{response.status_code} Error from Home Assistant. " f"Activate debug mode to see more details."
+            )
+            logger.debug(response.content)
+            speak_output = f"Error {response.status_code}, {self.language_strings[prompts.ERROR_400]}"
             return speak_output
 
         return False
 
-    def _get(self, *path: str, extra_headers: Optional[dict] = None):
+    def _get(self, *path: str, extra_headers: Optional[dict] = None) -> Optional[Response]:
         """
         Performs a request
 
@@ -196,9 +191,9 @@ class HomeAssistant(Borg):
             headers = headers.update(extra_headers)
 
         url = self._build_url(*path)
-        response = self.http.request("GET", url, headers=headers)
+        response = requests.get(url, headers=headers)
 
-        logger.debug(f"Raw response: {response.data}")
+        logger.debug(f"Raw response: {response.content}")
 
         errors: Union[bool, str] = self._check_response_errors(response)
         if errors:
@@ -222,7 +217,7 @@ class HomeAssistant(Borg):
             headers = headers.update(extra_headers)
 
         url = self._build_url(*path)
-        response = self.http.request("POST", url, headers=headers, body=json.dumps(body).encode("utf-8"))
+        response = requests.post(url, headers=headers, data=body)
 
         errors: Union[bool, str] = self._check_response_errors(response)
         if errors:
@@ -232,25 +227,26 @@ class HomeAssistant(Borg):
 
         return response
 
-    def _decode_response(self, response) -> Optional[dict]:
+    def _decode_response(self, response: Response) -> Optional[dict]:
         """
         Decodes the response into a json object
 
         :param response:
         :return: Json object or None
         """
-        decoded_response: Union[str, bytes] = json.loads(response.data.decode("utf-8")).get("state")
+        try:
+            decoded_response: dict = response.json()
+        except requests.JSONDecodeError:
+            logger.error(
+                "No entity state provided by Home Assistant. "
+                "Did you forget to add the actionable notification entity?"
+            )
+            return
+
         logger.debug(f"Decoded response: {decoded_response}")
 
-        if decoded_response:
-            return json.loads(decoded_response)
-
-        logger.error(
-            "No entity state provided by Home Assistant. " "Did you forget to add the actionable notification entity?"
-        )
         self._set_ha_error(prompts.ERROR_CONFIG)
         logger.debug(self.ha_state)
-        return
 
     def clear_state(self):
         """
@@ -331,8 +327,6 @@ class LaunchRequestHandler(AbstractRequestHandler):
         ha_obj = HomeAssistant(handler_input)
         speak_output: Optional[str] = ha_obj.ha_state.text
         event_id: Optional[str] = ha_obj.ha_state.event_id
-
-        handler = handler_input.response_builder.speak(speak_output)
 
         handler = handler_input.response_builder.speak(speak_output)
 
