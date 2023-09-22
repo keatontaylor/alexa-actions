@@ -26,14 +26,11 @@ from ask_sdk_core.utils import (
     get_slot,
     get_slot_value,
 )
-from ask_sdk_model import SessionEndedReason
 from ask_sdk_model.slu.entityresolution import StatusCode
 from urllib3 import HTTPResponse
 
 # Local Imports
 import prompts
-from schemas import HaState, HaStateError
-from utils import get_logger
 from const import (
     INPUT_TEXT_ENTITY,
     RESPONSE_YES,
@@ -45,6 +42,8 @@ from const import (
     RESPONSE_STRING,
     RESPONSE_DATE_TIME,
 )
+from schemas import HaState, HaStateError
+from utils import get_logger
 
 HOME_ASSISTANT_URL = HOME_ASSISTANT_URL.rstrip("/")
 
@@ -577,14 +576,11 @@ class SessionEndedRequestHandler(AbstractRequestHandler):
         @param handler_input:
         @return:
         """
-        logger.info('Session Ended Request Handler triggered')
+        logger.info("Session Ended Request Handler triggered")
 
         ha_obj = HomeAssistant(handler_input)
 
-        ha_obj.post_ha_event(
-            RESPONSE_NONE,
-            handler_input.request_envelope.request.reason
-        )
+        ha_obj.post_ha_event(RESPONSE_NONE, handler_input.request_envelope.request.reason)
 
         return handler_input.response_builder.response
 
@@ -642,13 +638,14 @@ class LocalizationInterceptor(AbstractRequestInterceptor):
         locale = handler_input.request_envelope.request.locale
         logger.info(f"Locale is {locale[:2]}")
 
-        # localized strings stored in language_strings.json
+        # Localized strings stored in language_strings.json
         with open("language_strings.json", encoding="utf-8") as language_prompts:
             language_data = json.load(language_prompts)
-        # set default translation data to broader translation
+        # Set default translation data to broader translation
         data = language_data[locale[:2]]
-        # if a more specialized translation exists, then select it instead
-        # example: "fr-CA" will pick "fr" translations first, but if "fr-CA" translation exists,
+
+        # If a more specialized translation exists, then select it instead
+        # Example: "fr-CA" will pick "fr" translations first, but if "fr-CA" translation exists,
         #          then pick that instead
         if locale in language_data:
             data.update(language_data[locale])
