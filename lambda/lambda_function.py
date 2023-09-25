@@ -333,11 +333,11 @@ class LaunchRequestHandler(AbstractRequestHandler):
 
         handler = handler_input.response_builder.speak(speak_output)
 
-        handler = handler_input.response_builder.speak(speak_output)
-
+        # If no event is passed, then user doesn't expect a response
         if event_id:
             handler.ask("")
 
+        handler.should_end_session = True
         return handler.response
 
 
