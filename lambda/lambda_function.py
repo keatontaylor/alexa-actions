@@ -356,8 +356,6 @@ class LaunchRequestHandler(AbstractRequestHandler):
 
         handler = handler_input.response_builder.speak(speak_output)
 
-        handler = handler_input.response_builder.speak(speak_output)
-
         if event_id:
             handler.ask("")
 
