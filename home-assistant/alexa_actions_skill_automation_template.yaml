@@ -206,7 +206,7 @@ action:
         sequence:
           - service: script.activate_alexa_actionable_notification
             data:
-              message: !input 'AlexaEventMessage'
+              text: !input 'AlexaEventMessage'
               event_id: !input 'AlexaEeventId'
               alexa_device: !input 'AlexaNotifier'
               suppress_confirmation: !input 'AlexaOkay'
