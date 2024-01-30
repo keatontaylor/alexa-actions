@@ -1,10 +1,10 @@
-# VERSION 0.9.1
+# VERSION 0.8.2
 
 # UPDATE THESE VARIABLES WITH YOUR CONFIG
-HOME_ASSISTANT_URL = "https://yourinstall.com"  # REPLACE WITH THE URL FOR YOUR HOME ASSISTANT
+HOME_ASSISTANT_URL = 'https://ha.foxydesignstudio.com'  # REPLACE WITH THE URL FOR YOUR HOME ASSISTANT
 VERIFY_SSL = True  # SET TO FALSE IF YOU DO NOT HAVE VALID CERTS
-TOKEN = ""  # ADD YOUR LONG LIVED TOKEN IF NEEDED OTHERWISE LEAVE BLANK
-DEBUG = False  # SET TO TRUE IF YOU WANT TO SEE MORE DETAILS IN THE LOGS
+TOKEN = ''  # ADD YOUR LONG LIVED TOKEN IF NEEDED OTHERWISE LEAVE BLANK
+DEBUG = True  # SET TO TRUE IF YOU WANT TO SEE MORE DETAILS IN THE LOGS
 
 # SET TO FALSE IF YOU DO NOT WANT TO SHARE CRASH REPORTS AND SKILL PERFORMANCE DATA WITH US.
 # We really appreciate if you keep this True as we use this to help us identify bugs and fix them.
@@ -51,6 +51,7 @@ from const import (
     RESPONSE_SELECT,
     RESPONSE_NUMERIC,
     RESPONSE_DURATION,
+    RESPONSE_USER,
     RESPONSE_STRING,
     RESPONSE_DATE_TIME,
 )
@@ -395,10 +396,10 @@ class NoIntentHandler(AbstractRequestHandler):
 
 
 class NumericIntentHandler(AbstractRequestHandler):
-    """Handler for Select Intent."""
+    """Handler for Numeric Intent."""
 
     def can_handle(self, handler_input):
-        """Check for Select Intent."""
+        """Check for Numeric Intent."""
         return is_intent_name("Number")(handler_input)
 
     def handle(self, handler_input):
@@ -413,6 +414,23 @@ class NumericIntentHandler(AbstractRequestHandler):
 
         return _handle_response(handler_input, speak_output)
 
+class UserIntentHandler(AbstractRequestHandler):
+    """Handler for User Intent."""
+
+    def can_handle(self, handler_input):
+        """Check for User Intent."""
+        return is_intent_name("User")(handler_input)
+
+    def handle(self, handler_input):
+        """Handle User Intent."""
+        logger.info("User Intent Handler triggered")
+        ha_obj = HomeAssistant(handler_input)
+        users = get_slot_value(handler_input, "Users")
+        logger.debug(f"User: {users}")
+
+        speak_output = ha_obj.post_ha_event(users, RESPONSE_USER)
+
+        return _handle_response(handler_input, speak_output)
 
 class StringIntentHandler(AbstractRequestHandler):
     """Handler for String Intent."""
@@ -671,6 +689,7 @@ sb = SkillBuilder()
 sb.add_request_handler(LaunchRequestHandler())
 sb.add_request_handler(YesIntentHandler())
 sb.add_request_handler(NoIntentHandler())
+sb.add_request_handler(UserIntentHandler())
 sb.add_request_handler(StringIntentHandler())
 sb.add_request_handler(SelectIntentHandler())
 sb.add_request_handler(NumericIntentHandler())
