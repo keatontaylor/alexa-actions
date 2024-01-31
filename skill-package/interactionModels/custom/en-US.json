@@ -49,9 +49,14 @@
                         {
                             "name": "Strings",
                             "type": "Invokes"
+                        },
+                        {
+                            "name": "Users",
+                            "type": "AMAZON.FirstName"
                         }
                     ],
                     "samples": [
+                        "{Strings} {Users}",
                         "{Strings}"
                     ]
                 },
