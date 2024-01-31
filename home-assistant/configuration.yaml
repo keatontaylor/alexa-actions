@@ -6,6 +6,16 @@ input_text:
     name: Alexa Actionable Notification Holder
     max: 255
     initial: '{"text": "This is a test of the alexa actionable notifications skill. Did it work?", "event": "actionable.skill.test"}'
+  alexa_actionable_response:
+    name: Alexa Actionable Response Holder
+    max: 255
+  assist_to_alexa_response:
+    name: Assist Response Holder
+    max: 255
+
+input_boolean:
+  alexa_action_in_progress:
+    name: Alexa Action in Progress
 
 script:
   activate_alexa_actionable_notification:
@@ -48,6 +58,10 @@ script:
       selector:
         boolean: null
   sequence:
+    - service: input_boolean.turn_on
+    data: {}
+    target:
+      entity_id: input_boolean.alexa_action_in_progress
     - service: input_text.set_value
       data_template:
         entity_id: input_text.alexa_actionable_notification

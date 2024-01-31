@@ -1,0 +1,104 @@
+alias: Alexa Action in Progress Auto Off
+description: >-
+  Turns the Alexa Action in Progress toggle off if it has been on for 1 minutes just
+  in case there was an error in processing an actionable notification that led
+  to it not reaching completion.
+trigger:
+  - platform: state
+    entity_id:
+      - input_boolean.alexa_action_in_progress
+    to: "on"
+    for:
+      hours: 0
+      minutes: 1
+      seconds: 0
+condition: []
+action:
+  - service: input_boolean.turn_off
+    data: {}
+    target:
+      entity_id: input_boolean.alexa_action_in_progress
+mode: single
+
+
+alias: Alexa Response Save Data
+description: Saves the incoming skill data to input_text for easy reference and troubleshooting
+trigger:
+  - platform: event
+    event_type: alexa_actionable_notification
+condition: []
+action:
+  - service: input_text.set_value
+    data:
+      entity_id: input_text.alexa_actionable_response
+      value: >-
+        incoming message: "{{response}}" | type: {{response_type}} | event id:
+        {{event_id}}
+mode: single
+variables:
+  response_type: "{{ trigger.event.data.event_response_type }}"
+  response: "{{ trigger.event.data.event_response }}"
+  event_id: "{{ trigger.event.data.event_id }}"
+
+
+alias: Alexa Actionable Intent
+description: >-
+  Looks for the ResponsString response types, which occur when you direct Alexa to 
+  tell/ask the skill anything that starts with the Intent slot, indicating a user-initiated 
+  request with intent. Condition - input_boolean.alexa_action_in_progress must be off (no
+  other action is active). Choose - create custom responses that Assist cannot perform (the
+  example here is to trigger finding a phone automation; Ultimately, I would want to remove
+  this and add custom sentences to Assist). Default - pass the message on to Assist, then 
+  announce the Assist response (and save response to input_text for easy reference and 
+  troubleshooting). Caveat - because the incoming message from Alexa does not ID the device,
+  you have to choose a default device that it always responds to.
+trigger:
+  - platform: event
+    event_type: alexa_actionable_notification
+    event_data:
+      event_response_type: ResponseString
+condition:
+  - condition: state
+    entity_id: input_boolean.alexa_action_in_progress
+    state: "off"
+action:
+  - choose:
+      - conditions:
+          - condition: template
+            value_template: "{{ 'find' in response }}"
+        sequence:
+          - choose:
+              - conditions:
+                  - condition: template
+                    value_template: "{{ 'User1' in response }}"
+                sequence:
+                  - service: input_boolean.turn_on
+                    data: {}
+                    target:
+                      entity_id: input_boolean.find_user1_phone
+    default:
+      - service: conversation.process
+        metadata: {}
+        data:
+          agent_id: homeassistant
+          text: "{{ response }}"
+        response_variable: assist
+      - service: input_text.set_value
+        data:
+          entity_id: input_text.assist_to_alexa_response
+          value: "{{ assist.response.speech.plain.speech }}"
+      - delay:
+          hours: 0
+          minutes: 0
+          seconds: 2
+          milliseconds: 0
+      - service: notify.alexa_media_your_alexa_device
+        data:
+          data:
+            type: announce
+          message: "{{ states('input_text.assist_to_alexa_response') }}"
+mode: single
+variables:
+  response_type: "{{ trigger.event.data.event_response_type }}"
+  response: "{{ trigger.event.data.event_response }}"
+  device: media_player.your_alexa_device
