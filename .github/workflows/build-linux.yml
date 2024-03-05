@@ -32,7 +32,7 @@ jobs:
         run: python -m pip install --upgrade pip
 
       - name: Install requirements to lambda folder
-        run: pip install --no-deps -r lambda/requirements.txt -t lambda/
+        run: "pip install --no-binary :all: --no-deps -r lambda/requirements.txt -t lambda/"
 
       - name: Zip Lambda fodler
         run: zip -r alexa-actions-linux.zip lambda
