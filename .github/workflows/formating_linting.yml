@@ -23,7 +23,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install ruff
       - name: Run Ruff
-        run: ruff check --format=github .
+        run: ruff check .
   format:
     runs-on: ubuntu-latest
     steps:
