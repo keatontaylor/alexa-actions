@@ -7,7 +7,7 @@
 #  Github: https://github.com/DEADSEC-SECURITY
 name: "Formatting & Linting"
 
-on: [push, pull_request]
+on: [pull_request]
 
 jobs:
   lint:
