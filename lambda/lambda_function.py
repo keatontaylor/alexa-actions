@@ -1,15 +1,10 @@
-# VERSION 0.9.1
+# VERSION 0.12.0
 
 # UPDATE THESE VARIABLES WITH YOUR CONFIG
 HOME_ASSISTANT_URL = "https://yourinstall.com"  # REPLACE WITH THE URL FOR YOUR HOME ASSISTANT
 VERIFY_SSL = True  # SET TO FALSE IF YOU DO NOT HAVE VALID CERTS
 TOKEN = ""  # ADD YOUR LONG LIVED TOKEN IF NEEDED OTHERWISE LEAVE BLANK
 DEBUG = False  # SET TO TRUE IF YOU WANT TO SEE MORE DETAILS IN THE LOGS
-
-# SET TO FALSE IF YOU DO NOT WANT TO SHARE CRASH REPORTS AND SKILL PERFORMANCE DATA WITH US.
-# We really appreciate if you keep this True as we use this to help us identify bugs and fix them.
-# Check sentry.io to see what information is collected
-ALLOW_ANONYMOUS_DATA_COLLECTION = True 
 
 """ NO NEED TO EDIT ANYTHING UNDER THE LINE """
 # Built-In Imports
@@ -20,9 +15,6 @@ from typing import Union, Optional
 # 3rd-Party Imports
 import isodate
 import urllib3
-import sentry_sdk
-from sentry_sdk.integrations.aws_lambda import AwsLambdaIntegration
-from sentry_sdk.integrations.logging import LoggingIntegration
 from ask_sdk_core.dispatch_components import AbstractExceptionHandler
 from ask_sdk_core.dispatch_components import AbstractRequestHandler
 from ask_sdk_core.dispatch_components import AbstractRequestInterceptor
@@ -59,19 +51,6 @@ HOME_ASSISTANT_URL = HOME_ASSISTANT_URL.rstrip("/")
 
 logger = get_logger(DEBUG)
 
-if ALLOW_ANONYMOUS_DATA_COLLECTION:
-    sentry_sdk.init(
-        dsn="https://5f56ef84a1063487a1b1c27f5b6f8391@o4506077312385024.ingest.sentry.io/4506077313630208",
-        integrations=[
-            AwsLambdaIntegration(),
-            LoggingIntegration(
-                level=logging.INFO,
-                event_level=logging.ERROR
-            )
-        ],
-        traces_sample_rate=0.1,
-        profiles_sample_rate=0.1,
-    )
 
 def _handle_response(handler, speak_out: Optional[str]):
     """
