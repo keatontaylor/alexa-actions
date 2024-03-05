@@ -2,4 +2,3 @@ isodate~=0.6.0
 boto3~=1.28.0
 ask-sdk-core~=1.19.0
 pydantic~=1.10.4
-sentry-sdk>=1.32.0
