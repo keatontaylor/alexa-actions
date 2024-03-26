@@ -14,7 +14,7 @@ from typing import Union, Optional
 # 3rd-Party Imports
 import isodate
 import urllib3
-import ask_sdk_ciore
+import ask_sdk_core
 from ask_sdk_core.dispatch_components import AbstractExceptionHandler
 from ask_sdk_core.dispatch_components import AbstractRequestHandler
 from ask_sdk_core.dispatch_components import AbstractRequestInterceptor
