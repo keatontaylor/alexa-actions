@@ -8,13 +8,10 @@ DEBUG = False  # SET TO TRUE IF YOU WANT TO SEE MORE DETAILS IN THE LOGS
 
 """ NO NEED TO EDIT ANYTHING UNDER THE LINE """
 # Built-In Imports
-import json
-from typing import Union, Optional
-
-# 3rd-Party Imports
-import isodate
-import urllib3
 import ask_sdk_core
+import ask_sdk_model
+import json
+import urllib3
 from ask_sdk_core.dispatch_components import AbstractExceptionHandler
 from ask_sdk_core.dispatch_components import AbstractRequestHandler
 from ask_sdk_core.dispatch_components import AbstractRequestInterceptor
@@ -27,12 +24,13 @@ from ask_sdk_core.utils import (
     get_slot,
     get_slot_value,
 )
-import ask_sdk_model
 from ask_sdk_model import SessionEndedReason
 from ask_sdk_model.slu.entityresolution import StatusCode
+from typing import Union, Optional
 from urllib3 import HTTPResponse
 
 # Local Imports
+import isodate
 import prompts
 from schemas import HaState, HaStateError
 from utils import get_logger
