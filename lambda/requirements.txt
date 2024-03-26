@@ -1,3 +1,4 @@
+ask_sdk_core
 isodate~=0.6.0
 pydantic~=1.10.4
 typing-extensions~=4.10.0
