@@ -1,11 +1,15 @@
 name: ci
 
+#Enable trigger after push if you want
 on:
   push:
     paths-ignore:
       - 'README.md'
-    branches:
+    branches-ignore:    
       - 'main'
+      - '*'
+    #branches:
+    #  - 'main'
 
 jobs:
   docker:
