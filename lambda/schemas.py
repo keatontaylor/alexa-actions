@@ -16,12 +16,12 @@ from pydantic import BaseModel, Field
 
 
 class HaStateError(BaseModel):
-    _error: bool = Field(default=True, alias="error", title="error")
+    error: bool = Field(default=True, alias="error", title="error")
     text: str
 
 
 class HaState(BaseModel):
-    _error: bool = Field(default=False, alias="error", title="error")
+    error: bool = Field(default=False, alias="error", title="error")
     event_id: Optional[str]
     suppress_confirmation: bool = Field(default=False)
     text: str

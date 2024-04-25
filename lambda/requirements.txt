@@ -1,4 +1,9 @@
-isodate~=0.6.0
-pydantic~=1.10.4
-typing-extensions~=4.10.0
-ask-sdk~=1.19.0
+isodate
+pydantic
+typing-extensions
+urllib3
+urllib3[socks]
+pysocks
+ask_sdk_core
+ask_sdk_model
+awslambdaric
