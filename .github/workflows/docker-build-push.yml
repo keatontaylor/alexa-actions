@@ -6,10 +6,10 @@ on:
     paths-ignore:
       - 'README.md'
     branches-ignore:    
-      - 'master'
+      - 'main'
       - '*'
     #branches:
-    #  - 'master'
+    #  - 'main'
   workflow_dispatch:
 
 jobs:
