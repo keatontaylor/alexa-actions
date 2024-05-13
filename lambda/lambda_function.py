@@ -1,39 +1,37 @@
 # VERSION 0.12.0
 
-# UPDATE THESE VARIABLES WITH YOUR CONFIG
-HOME_ASSISTANT_URL = "https://yourinstall.com"  # REPLACE WITH THE URL FOR YOUR HOME ASSISTANT
-VERIFY_SSL = True  # SET TO FALSE IF YOU DO NOT HAVE VALID CERTS
-TOKEN = ""  # ADD YOUR LONG LIVED TOKEN IF NEEDED OTHERWISE LEAVE BLANK
-DEBUG = False  # SET TO TRUE IF YOU WANT TO SEE MORE DETAILS IN THE LOGS
-
-""" NO NEED TO EDIT ANYTHING UNDER THE LINE """
 # Built-In Imports
 import json
 from typing import Union, Optional
+import logging
+
 
 # 3rd-Party Imports
-import isodate
 import urllib3
-from ask_sdk_core.dispatch_components import AbstractExceptionHandler
-from ask_sdk_core.dispatch_components import AbstractRequestHandler
-from ask_sdk_core.dispatch_components import AbstractRequestInterceptor
+from urllib3.contrib.socks import SOCKSProxyManager
+import isodate
+from ask_sdk_core.dispatch_components.exception_components import AbstractExceptionHandler
+from ask_sdk_core.dispatch_components.request_components import AbstractRequestHandler
+from ask_sdk_core.dispatch_components.request_components import AbstractRequestInterceptor
 from ask_sdk_core.skill_builder import SkillBuilder
-from ask_sdk_core.utils import (
-    get_account_linking_access_token,
+from ask_sdk_core.utils.predicate import (
     is_request_type,
     is_intent_name,
+)
+
+from ask_sdk_core.utils.request_util import (
     get_intent_name,
     get_slot,
     get_slot_value,
 )
-from ask_sdk_model import SessionEndedReason
-from ask_sdk_model.slu.entityresolution import StatusCode
+from ask_sdk_model.session_ended_reason import SessionEndedReason
+from ask_sdk_model.slu.entityresolution.status_code import StatusCode
 from urllib3 import HTTPResponse
 
 # Local Imports
 import prompts
+from config import configuration
 from schemas import HaState, HaStateError
-from utils import get_logger
 from const import (
     INPUT_TEXT_ENTITY,
     RESPONSE_YES,
@@ -44,11 +42,15 @@ from const import (
     RESPONSE_DURATION,
     RESPONSE_STRING,
     RESPONSE_DATE_TIME,
+    HA_URL,
+    HA_TOKEN,
+    SSL_VERIFY,
+    DEBUG,
+    AWS_DEFAULT_REGION,
+    ALL_PROXY
 )
 
-HOME_ASSISTANT_URL = HOME_ASSISTANT_URL.rstrip("/")
-
-logger = get_logger(DEBUG)
+logger = logging.getLogger()
 
 
 def _handle_response(handler, speak_out: Optional[str]):
@@ -76,9 +78,10 @@ class Borg:
         self.__dict__ = self._shared_state
 
 
-def _init_http_pool():
+def _init_http_pool(ssl_verfiy: bool):
     return urllib3.PoolManager(
-        cert_reqs="CERT_REQUIRED" if VERIFY_SSL else "CERT_NONE", timeout=urllib3.Timeout(connect=10.0, read=10.0)
+        cert_reqs="CERT_REQUIRED" if ssl_verfiy else "CERT_NONE",
+        timeout=urllib3.Timeout(connect=10.0, read=10.0),
     )
 
 
@@ -114,23 +117,49 @@ class HomeAssistant(Borg):
     def __init__(self, handler_input=None):
         Borg.__init__(self)
 
+        self.url = configuration[HA_URL]
+        self.bearer_token = configuration[HA_TOKEN]
+        self.ssl_verify = configuration[SSL_VERIFY]
+        self.debug = configuration[DEBUG]
+        self.aws_region = configuration[AWS_DEFAULT_REGION]
+        self.proxy = configuration[ALL_PROXY]
+        logger.setLevel(logging.INFO)
+        
+        if self.debug:
+            logger.setLevel(logging.DEBUG)
+
+        logger.debug(f"self.debug is { self.debug}")
+        logger.debug(f"logger.debug is { logger.getEffectiveLevel()}")
+        logger.debug(f"HA_URL is { self.url}")
+
         # Define class vars
         self.ha_state = None
-        self.http = _init_http_pool()
+
+        if(self.proxy is None):
+            self.http = _init_http_pool(self.ssl_verify)
+        else:
+            logger.debug(f"Proxy is { self.proxy}")
+            self.http = SOCKSProxyManager(self.proxy)
 
         if handler_input:
             self.handler_input = handler_input
 
         # Gets data from langua_strings.json file according to the locale
         self.language_strings = self.handler_input.attributes_manager.request_attributes["_"]
-
-        self.token = self._fetch_token() if TOKEN == "" else TOKEN
+        self.token = self._fetch_token() if self.token == "" else self.token
 
         self.get_ha_state()
 
     def _fetch_token(self):
         logger.debug("Fetching Home Assistant token from Alexa")
         return get_account_linking_access_token(self.handler_input)
+
+    def get_ha_url(self):
+        """Returns Home Assistant base url without."""
+        url = self.url
+        if not url:
+            raise ValueError('Property "url" is missing in config')
+        return url.replace("/api", "").rstrip("/")
 
     def _set_ha_error(self, prompt: str):
         """
@@ -144,15 +173,18 @@ class HomeAssistant(Borg):
         """
         self.ha_state = HaStateError(text=self.language_strings[prompt])
 
-    @staticmethod
-    def _build_url(*path: str):
+    def _build_url(self, *path: str):
         """
         Builds the url from paths given
 
         :param path:
         :return:
         """
-        return f"{HOME_ASSISTANT_URL}/" + "/".join(path)
+        home_assistant_url = self.get_ha_url()
+        logger.debug(f"Home Assistant URL: {home_assistant_url}")
+        home_assistant_url = f"{home_assistant_url}/" + "/".join(path)
+        logger.debug(f"Home Assistant Api URL: {home_assistant_url}")
+        return home_assistant_url
 
     def _get_headers(self):
         """
@@ -161,7 +193,18 @@ class HomeAssistant(Borg):
         :return:
         """
 
-        return {"Authorization": f"Bearer {self.token}", "Content-Type": "application/json"}
+        return {
+            "Authorization": f"Bearer {self.bearer_token}",
+            "Content-Type": "application/json",
+            # "User-Agent": self.get_user_agent(self),
+        }
+
+    def get_user_agent(self):
+        library = "Home Assistant Alexa Notification Skill"
+        aws_region = self.aws_region
+        logger.debug(f"AWS_DEFAULT_REGION is { aws_region}")
+        default_user_agent = "Alexa Notification Agent"
+        return f"{library} - {aws_region} - {default_user_agent}"
 
     def _check_response_errors(self, response: HTTPResponse) -> Union[bool, str]:
         if response.status == 401:
@@ -290,7 +333,11 @@ class HomeAssistant(Borg):
         :param kwargs: Additional parameters to send to the Home Assistant server.
         :return: The text to speak to the user.
         """
-        body = {"event_id": self.ha_state.event_id, "event_response": response, "event_response_type": response_type}
+        body = {
+            "event_id": self.ha_state.event_id,
+            "event_response": response,
+            "event_response_type": response_type,
+        }
         body.update(kwargs)
 
         if self.handler_input.request_envelope.context.system.person:
@@ -636,7 +683,8 @@ class LocalizationInterceptor(AbstractRequestInterceptor):
         handler_input.attributes_manager.request_attributes["_"] = data
 
 
-""" 
+
+"""
     The SkillBuilder object acts as the entry point for your skill, routing all request and response
     payloads to the handlers above. Make sure any new handlers or interceptors you've
     defined are included below. 
