@@ -23,6 +23,7 @@ from ask_sdk_core.utils.request_util import (
     get_intent_name,
     get_slot,
     get_slot_value,
+    get_account_linking_access_token
 )
 from ask_sdk_model.session_ended_reason import SessionEndedReason
 from ask_sdk_model.slu.entityresolution.status_code import StatusCode
