@@ -551,6 +551,22 @@ class CancelOrStopIntentHandler(AbstractRequestHandler):
 
         return _handle_response(handler_input, speak_output)
 
+class FallbackHandler(AbstractRequestHandler):
+    """Handler for Fallback."""
+
+    def can_handle(self, handler_input):
+        """Check for Select Intent."""
+        return is_intent_name("AMAZON.FallbackIntent")(handler_input)
+
+    def handle(self, handler_input):
+        """Handle Fallback."""
+        logger.info("Fallback Handler triggered")
+        ha_obj = HomeAssistant(handler_input)
+        #reason = handler_input.request_envelope.request.reason
+        #if reason == SessionEndedReason.EXCEEDED_MAX_REPROMPTS or reason == SessionEndedReason.USER_INITIATED:
+        ha_obj.post_ha_event(RESPONSE_NONE, RESPONSE_NONE)
+
+        return handler_input.response_builder.response
 
 class SessionEndedRequestHandler(AbstractRequestHandler):
     """Handler for Session End."""
@@ -655,6 +671,7 @@ sb.add_request_handler(NumericIntentHandler())
 sb.add_request_handler(DurationIntentHandler())
 sb.add_request_handler(DateTimeIntentHandler())
 sb.add_request_handler(CancelOrStopIntentHandler())
+sb.add_request_handler(FallbackHandler())
 sb.add_request_handler(SessionEndedRequestHandler())
 sb.add_request_handler(IntentReflectorHandler())
 
