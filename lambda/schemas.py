@@ -22,6 +22,7 @@ class HaStateError(BaseModel):
 
 class HaState(BaseModel):
     _error: bool = Field(default=False, alias="error", title="error")
-    event_id: Optional[str]
+    event_id: Optional[str] = None
+    request_id: Optional[str] = None
     suppress_confirmation: bool = Field(default=False)
     text: str
