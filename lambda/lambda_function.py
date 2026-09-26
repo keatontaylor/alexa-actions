@@ -4,12 +4,14 @@
 HOME_ASSISTANT_URL = "https://yourinstall.com"  # REPLACE WITH THE URL FOR YOUR HOME ASSISTANT
 VERIFY_SSL = True  # SET TO FALSE IF YOU DO NOT HAVE VALID CERTS
 TOKEN = ""  # ADD YOUR LONG LIVED TOKEN IF NEEDED OTHERWISE LEAVE BLANK
+INCLUDE_DEVICE_ID = False  # OPTIONAL: ADD AMAZON DEVICE ID TO RESPONSE EVENTS
 DEBUG = False  # SET TO TRUE IF YOU WANT TO SEE MORE DETAILS IN THE LOGS
 
 """ NO NEED TO EDIT ANYTHING UNDER THE LINE """
 # Built-In Imports
 import json
-from typing import Union, Optional
+from pathlib import Path
+from typing import Optional
 
 # 3rd-Party Imports
 import isodate
@@ -24,14 +26,14 @@ from ask_sdk_core.utils import (
     is_intent_name,
     get_intent_name,
     get_slot,
-    get_slot_value,
+    get_simple_slot_values,
 )
 from ask_sdk_model import SessionEndedReason
 from ask_sdk_model.slu.entityresolution import StatusCode
-from urllib3 import HTTPResponse
 
 # Local Imports
 import prompts
+from pydantic import ValidationError
 from schemas import HaState, HaStateError
 from utils import get_logger
 from const import (
@@ -62,23 +64,22 @@ def _handle_response(handler, speak_out: Optional[str]):
     :param speak_out:
     :return:
     """
+    builder = handler.response_builder.set_should_end_session(True)
     if speak_out:
-        return handler.response_builder.speak(speak_out).response
-    return handler.response_builder.response
+        builder.speak(speak_out)
+    return builder.response
 
 
-class Borg:
-    """Borg MonoState Class for State Persistence."""
-
-    _shared_state = {}
-
-    def __init__(self):
-        self.__dict__ = self._shared_state
+SESSION_KEY = "alexa_actionable_notification"
+COMPLETED_KEY = "alexa_actionable_notification_completed"
 
 
 def _init_http_pool():
+    # A failed HA connection must fit within Alexa's request-response deadline.
     return urllib3.PoolManager(
-        cert_reqs="CERT_REQUIRED" if VERIFY_SSL else "CERT_NONE", timeout=urllib3.Timeout(connect=10.0, read=10.0)
+        cert_reqs="CERT_REQUIRED" if VERIFY_SSL else "CERT_NONE",
+        timeout=urllib3.Timeout(total=3.0, connect=1.0, read=2.0),
+        retries=False,
     )
 
 
@@ -106,217 +107,142 @@ def _string_to_bool(value: Optional[str], default: bool = False) -> bool:
     return default
 
 
-class HomeAssistant(Borg):
-    """HomeAssistant Wrapper Class."""
+def _slot_value(handler_input, name):
+    slot = get_slot(handler_input, name)
+    if slot is None:
+        return None
+    if slot.slot_value is not None:
+        values = get_simple_slot_values(slot.slot_value)
+        return values[0].value if len(values) == 1 else None
+    return slot.value
 
-    ha_state: Optional[Union[HaState, HaStateError]]
 
-    def __init__(self, handler_input=None):
-        Borg.__init__(self)
+class HomeAssistant:
+    """One request's HA client, with notification context carried by Alexa's session."""
 
-        # Define class vars
+    def __init__(self, handler_input):
+        self.handler_input = handler_input
         self.ha_state = None
         self.http = _init_http_pool()
+        attributes = handler_input.attributes_manager
+        attributes.request_attributes["ha"] = self
+        self.language_strings = attributes.request_attributes["_"]
+        self.session = attributes.session_attributes
+        self.token = TOKEN or get_account_linking_access_token(handler_input)
+        self.completed = bool(self.session.get(COMPLETED_KEY, False))
+        if is_request_type("LaunchRequest")(handler_input):
+            self.session.pop(SESSION_KEY, None)
+            self.session[COMPLETED_KEY] = False
+            self.completed = False
+            self.get_ha_state()
+            if isinstance(self.ha_state, HaState):
+                self.session[SESSION_KEY] = self.ha_state.dict()
+        else:
+            # Never re-read a mutable helper to resolve an answer or an old end callback.
+            snapshot = self.session.get(SESSION_KEY)
+            try:
+                self.ha_state = HaState.parse_obj(snapshot) if isinstance(snapshot, dict) else None
+            except ValidationError:
+                self._set_ha_error(prompts.ERROR_CONFIG)
 
-        if handler_input:
-            self.handler_input = handler_input
-
-        # Gets data from langua_strings.json file according to the locale
-        self.language_strings = self.handler_input.attributes_manager.request_attributes["_"]
-
-        self.token = self._fetch_token() if TOKEN == "" else TOKEN
-
-        self.get_ha_state()
-
-    def _fetch_token(self):
-        logger.debug("Fetching Home Assistant token from Alexa")
-        return get_account_linking_access_token(self.handler_input)
-
-    def _set_ha_error(self, prompt: str):
-        """
-        Sets the self.ha_state to the error prompt
-
-        Used when a function fails and alexa should say the error message instead of the
-        intended one
-
-        :param prompt: Value obtained from prompts file
-        :return:
-        """
+    def _set_ha_error(self, prompt):
         self.ha_state = HaStateError(text=self.language_strings[prompt])
 
     @staticmethod
-    def _build_url(*path: str):
-        """
-        Builds the url from paths given
-
-        :param path:
-        :return:
-        """
-        return f"{HOME_ASSISTANT_URL}/" + "/".join(path)
+    def _build_url(*path):
+        return f"{HOME_ASSISTANT_URL.rstrip('/')}/" + "/".join(path)
 
     def _get_headers(self):
-        """
-        Returns the request headers
-
-        :return:
-        """
-
         return {"Authorization": f"Bearer {self.token}", "Content-Type": "application/json"}
 
-    def _check_response_errors(self, response: HTTPResponse) -> Union[bool, str]:
-        if response.status == 401:
-            logger.error("401 Error from Home Assistant. Activate debug mode to see more details.")
-            logger.debug(response.data)
-            speak_output = "Error 401 " + self.language_strings[prompts.ERROR_401]
-            return speak_output
-        if response.status == 404:
-            logger.error("404 Error from Home Assistant. Activate debug mode to see more details.")
-            logger.debug(response.data)
-            speak_output = "Error 404 " + self.language_strings[prompts.ERROR_404]
-            return speak_output
-        if response.status >= 400:
-            logger.error(f"{response.status} Error from Home Assistant. " f"Activate debug mode to see more details.")
-            logger.debug(response.data)
-            speak_output = f"Error {response.status}, {self.language_strings[prompts.ERROR_400]}"
-            return speak_output
-
-        return False
-
-    def _get(self, *path: str, extra_headers: Optional[dict] = None):
-        """
-        Performs a request
-
-        :param path:
-        :param headers:
-        :param params:
-        :return:
-        """
+    def _request(self, method, *path, body=None, extra_headers=None):
+        if not self.token:
+            self._set_ha_error(prompts.ERROR_401)
+            return None
         headers = self._get_headers()
         if extra_headers:
-            headers = headers.update(extra_headers)
-
-        url = self._build_url(*path)
-        response = self.http.request("GET", url, headers=headers)
-
-        logger.debug(f"Raw response: {response.data}")
-
-        errors: Union[bool, str] = self._check_response_errors(response)
-        if errors:
-            self.ha_state = HaStateError(text=errors)
-            logger.debug(self.ha_state)
+            headers.update(extra_headers)
+        try:
+            response = self.http.request(
+                method,
+                self._build_url(*path),
+                headers=headers,
+                **({"body": json.dumps(body).encode("utf-8")} if body is not None else {}),
+            )
+        except (urllib3.exceptions.HTTPError, OSError):
+            logger.warning("HA transport failed for %s %s", method, "/".join(path))
+            self._set_ha_error(prompts.ERROR_400)
             return None
-
+        logger.info("HA %s %s status=%s", method, "/".join(path), response.status)
+        if response.status >= 300:
+            prompt = {401: prompts.ERROR_401, 404: prompts.ERROR_404}.get(response.status, prompts.ERROR_400)
+            self.ha_state = HaStateError(text=f"Error {response.status} " + self.language_strings[prompt])
+            return None
         return response
 
-    def _post(self, *path: str, body: dict, extra_headers: Optional[dict] = None):
-        """
-        Performs a request
+    def _get(self, *path, extra_headers=None):
+        return self._request("GET", *path, extra_headers=extra_headers)
 
-        :param path:
-        :param headers:
-        :param params:
-        :return:
-        """
-        headers = self._get_headers()
-        if extra_headers:
-            headers = headers.update(extra_headers)
-
-        url = self._build_url(*path)
-        response = self.http.request("POST", url, headers=headers, body=json.dumps(body).encode("utf-8"))
-
-        errors: Union[bool, str] = self._check_response_errors(response)
-        if errors:
-            self.ha_state = HaStateError(text=errors)
-            logger.debug(self.ha_state)
-            return None
-
-        return response
-
-    def _decode_response(self, response) -> Optional[dict]:
-        """
-        Decodes the response into a json object
-
-        :param response:
-        :return: Json object or None
-        """
-        decoded_response: Union[str, bytes] = json.loads(response.data.decode("utf-8")).get("state")
-        logger.debug(f"Decoded response: {decoded_response}")
-
-        if decoded_response:
-            return json.loads(decoded_response)
-
-        logger.error(
-            "No entity state provided by Home Assistant. " "Did you forget to add the actionable notification entity?"
-        )
-        self._set_ha_error(prompts.ERROR_CONFIG)
-        logger.debug(self.ha_state)
-        return
-
-    def clear_state(self):
-        """
-        Clear the state of the local Home Assistant object.
-        """
-
-        logger.debug("Clearing Home Assistant local state")
-        self.ha_state = None
+    def _post(self, *path, body, extra_headers=None):
+        return self._request("POST", *path, body=body, extra_headers=extra_headers)
 
     def get_ha_state(self):
-        """
-        Updates the local HA state with the servers state
-
-        Used for getting the text to speak, event_id as well as other passable variables
-        """
         response = self._get("api", "states", INPUT_TEXT_ENTITY)
-        if not response:
+        if response is None:
             return
+        try:
+            outer = json.loads(response.data.decode("utf-8"))
+            state = json.loads(outer["state"])
+            if not isinstance(state, dict) or not isinstance(state.get("text"), str) or not state["text"]:
+                raise ValueError("Missing notification text")
+            event = state.get("event")
+            request_id = state.get("request_id")
+            if event is not None and not isinstance(event, str):
+                raise ValueError("Invalid event ID")
+            if request_id is not None and not isinstance(request_id, str):
+                raise ValueError("Invalid request ID")
+            self.ha_state = HaState(
+                event_id=event,
+                text=state["text"],
+                request_id=request_id,
+                suppress_confirmation=_string_to_bool(state.get("suppress_confirmation")),
+            )
+        except (ValueError, TypeError, KeyError, AttributeError, ValidationError):
+            logger.warning("HA helper does not contain a valid notification object")
+            self._set_ha_error(prompts.ERROR_CONFIG)
 
-        response = self._decode_response(response)
-        if not response:
-            return
-
-        self.ha_state = HaState(
-            event_id=response.get("event"),
-            suppress_confirmation=_string_to_bool(response.get("suppress_confirmation")),
-            text=response.get("text"),
-        )
-        logger.debug(self.ha_state)
-
-    def post_ha_event(self, response: str, response_type: str, **kwargs) -> Optional[str]:
-        """
-        Posts an event to the Home Assistant server.
-
-        :param response: The response to send to the Home Assistant server.
-        :param response_type: The type of response to send to the Home Assistant server.
-        :param kwargs: Additional parameters to send to the Home Assistant server.
-        :return: The text to speak to the user.
-        """
-        body = {"event_id": self.ha_state.event_id, "event_response": response, "event_response_type": response_type}
-        body.update(kwargs)
-
-        if self.handler_input.request_envelope.context.system.person:
-            person_id = self.handler_input.request_envelope.context.system.person.person_id
-            body["event_person_id"] = person_id
-
-        response = self._post("api", "events", "alexa_actionable_notification", body=body)
-        if not response:
+    def post_ha_event(self, response, response_type, **kwargs):
+        if self.completed:
+            return ""
+        if not isinstance(self.ha_state, HaState) or not self.ha_state.event_id:
+            if not isinstance(self.ha_state, HaStateError):
+                self._set_ha_error(prompts.ERROR_CONFIG)
             return self.ha_state.text
-
-        if not self.ha_state.suppress_confirmation:
-            self.clear_state()
-            return self.language_strings[prompts.OKAY]
-
-        self.clear_state()
-        return ""
+        state = self.ha_state
+        body = {"event_id": state.event_id, "event_response": response, "event_response_type": response_type}
+        if state.request_id:
+            body["request_id"] = state.request_id
+        body.update(kwargs)
+        system = self.handler_input.request_envelope.context.system
+        if system.person and system.person.person_id:
+            body["event_person_id"] = system.person.person_id
+        if INCLUDE_DEVICE_ID and system.device and system.device.device_id:
+            body["event_device_id"] = system.device.device_id
+        if self._post("api", "events", "alexa_actionable_notification", body=body) is None:
+            return self.ha_state.text
+        self.completed = True
+        self.session[COMPLETED_KEY] = True
+        return "" if state.suppress_confirmation else self.language_strings[prompts.OKAY]
 
     def get_value_for_slot(self, slot_name):
-        """ "Get value from slot, also known as the (why does amazon make you do this)"""
         slot = get_slot(self.handler_input, slot_name=slot_name)
         if slot and slot.resolutions and slot.resolutions.resolutions_per_authority:
             for resolution in slot.resolutions.resolutions_per_authority:
                 if resolution.status.code == StatusCode.ER_SUCCESS_MATCH:
-                    for value in resolution.values:
+                    for value in resolution.values or []:
                         if value.value and value.value.name:
                             return value.value.name
+        return None
 
 
 class LaunchRequestHandler(AbstractRequestHandler):
@@ -329,14 +255,16 @@ class LaunchRequestHandler(AbstractRequestHandler):
     def handle(self, handler_input):
         """Handler for Skill Launch."""
         ha_obj = HomeAssistant(handler_input)
-        speak_output: Optional[str] = ha_obj.ha_state.text
-        event_id: Optional[str] = ha_obj.ha_state.event_id
-
-        handler = handler_input.response_builder.speak(speak_output)
-
-        if event_id:
+        state = ha_obj.ha_state
+        if not isinstance(state, HaState):
+            return _handle_response(
+                handler_input, state.text if state else ha_obj.language_strings[prompts.ERROR_CONFIG]
+            )
+        handler = handler_input.response_builder.speak(state.text)
+        if state.event_id:
             handler.ask("")
-
+        else:
+            handler.set_should_end_session(True)
         return handler.response
 
 
@@ -383,10 +311,10 @@ class NumericIntentHandler(AbstractRequestHandler):
         """Handle the Select intent."""
         logger.info("Numeric Intent Handler triggered")
         ha_obj = HomeAssistant(handler_input)
-        number = get_slot_value(handler_input, "Numbers")
+        number = _slot_value(handler_input, "Numbers")
         logger.debug(f"Number: {number}")
-        if number == "?":
-            raise
+        if not number or number == "?":
+            raise ValueError("Number slot is missing or unresolved")
         speak_output = ha_obj.post_ha_event(number, RESPONSE_NUMERIC)
 
         return _handle_response(handler_input, speak_output)
@@ -403,8 +331,10 @@ class StringIntentHandler(AbstractRequestHandler):
         """Handle String Intent."""
         logger.info("String Intent Handler triggered")
         ha_obj = HomeAssistant(handler_input)
-        strings = get_slot_value(handler_input, "Strings")
-        logger.debug(f"String: {strings}")
+        strings = _slot_value(handler_input, "Strings")
+        logger.debug("String intent received")
+        if not strings:
+            raise ValueError("String slot is missing")
 
         speak_output = ha_obj.post_ha_event(strings, RESPONSE_STRING)
 
@@ -426,11 +356,11 @@ class SelectIntentHandler(AbstractRequestHandler):
         logger.debug(f"Selection: {selection}")
 
         if not selection:
-            raise
+            raise ValueError("Selection slot is missing or unresolved")
 
-        ha_obj.post_ha_event(selection, RESPONSE_SELECT)
-        data = handler_input.attributes_manager.request_attributes["_"]
-        speak_output = data[prompts.SELECTED].format(selection)
+        speak_output = ha_obj.post_ha_event(selection, RESPONSE_SELECT)
+        if ha_obj.completed and speak_output:
+            speak_output = ha_obj.language_strings[prompts.SELECTED].format(selection)
 
         return _handle_response(handler_input, speak_output)
 
@@ -446,10 +376,12 @@ class DurationIntentHandler(AbstractRequestHandler):
         """Handle the Duration Intent."""
         logger.info("Duration Intent Handler triggered")
         ha_obj = HomeAssistant(handler_input)
-        duration = get_slot_value(handler_input, "Durations")
+        duration = _slot_value(handler_input, "Durations")
 
         logger.debug(f"Duration: {duration}")
 
+        if not duration:
+            raise ValueError("Duration slot is missing")
         speak_output = ha_obj.post_ha_event(isodate.parse_duration(duration).total_seconds(), RESPONSE_DURATION)
 
         return _handle_response(handler_input, speak_output)
@@ -467,14 +399,14 @@ class DateTimeIntentHandler(AbstractRequestHandler):
         logger.info("Date Intent Handler triggered")
         ha_obj = HomeAssistant(handler_input)
 
-        date = get_slot_value(handler_input, "Dates")
-        time = get_slot_value(handler_input, "Times")
+        date = _slot_value(handler_input, "Dates")
+        time = _slot_value(handler_input, "Times")
 
         logger.debug(f"Dates: {date} of type {type(date)}")
         logger.debug(f"Times: {time} of type {type(time)}")
 
         if not date and not time:
-            raise
+            raise ValueError("Date and time slots are missing")
 
         speak_output = ha_obj.post_ha_event(
             json.dumps({**self._parse_date(date), **self._parse_time(time)}), RESPONSE_DATE_TIME
@@ -546,8 +478,10 @@ class CancelOrStopIntentHandler(AbstractRequestHandler):
     def handle(self, handler_input):
         """Handle Cancel and Stop Intent."""
         logger.info("Cancel or Stop Intent Handler triggered")
+        ha_obj = HomeAssistant(handler_input)
+        ha_obj.post_ha_event(RESPONSE_NONE, RESPONSE_NONE)
         data = handler_input.attributes_manager.request_attributes["_"]
-        speak_output = data[prompts.STOP_MESSAGE]
+        speak_output = ha_obj.ha_state.text if isinstance(ha_obj.ha_state, HaStateError) else data[prompts.STOP_MESSAGE]
 
         return _handle_response(handler_input, speak_output)
 
@@ -563,11 +497,8 @@ class FallbackHandler(AbstractRequestHandler):
         """Handle Fallback."""
         logger.info("Fallback Handler triggered")
         ha_obj = HomeAssistant(handler_input)
-        # reason = handler_input.request_envelope.request.reason
-        # if reason == SessionEndedReason.EXCEEDED_MAX_REPROMPTS or reason == SessionEndedReason.USER_INITIATED:
-        ha_obj.post_ha_event(RESPONSE_NONE, RESPONSE_NONE)
-
-        return handler_input.response_builder.response
+        speak_output = ha_obj.post_ha_event(RESPONSE_NONE, RESPONSE_NONE)
+        return _handle_response(handler_input, speak_output)
 
 
 class SessionEndedRequestHandler(AbstractRequestHandler):
@@ -623,14 +554,19 @@ class CatchAllExceptionHandler(AbstractExceptionHandler):
         """Handle exception."""
         logger.info("Catch All Exception triggered")
         logger.error(exception, exc_info=True)
-        ha_obj = HomeAssistant()
-
-        data = handler_input.attributes_manager.request_attributes["_"]
-        if ha_obj.ha_state and ha_obj.ha_state.text:
-            speak_output = data[prompts.ERROR_ACOUSTIC].format(ha_obj.ha_state.text)
-            return handler_input.response_builder.speak(speak_output).ask("").response
-        speak_output = data[prompts.ERROR_CONFIG].format(ha_obj.ha_state.text)
-        return handler_input.response_builder.speak(speak_output).response
+        # Do not make another network call from error handling.
+        attributes = handler_input.attributes_manager.request_attributes
+        data = attributes.get("_", {prompts.ERROR_CONFIG: "Please check the skill configuration."})
+        ha_obj = attributes.get("ha")
+        state = ha_obj.ha_state if ha_obj else None
+        if is_request_type("SessionEndedRequest")(handler_input):
+            return handler_input.response_builder.response
+        if isinstance(state, HaStateError):
+            return _handle_response(handler_input, state.text)
+        if isinstance(state, HaState) and state.event_id and not ha_obj.completed:
+            speech = data[prompts.ERROR_ACOUSTIC].format(state.text)
+            return handler_input.response_builder.speak(speech).ask("").response
+        return _handle_response(handler_input, data[prompts.ERROR_CONFIG])
 
 
 class LocalizationInterceptor(AbstractRequestInterceptor):
@@ -642,7 +578,7 @@ class LocalizationInterceptor(AbstractRequestInterceptor):
         logger.info(f"Locale is {locale[:2]}")
 
         # localized strings stored in language_strings.json
-        with open("language_strings.json", encoding="utf-8") as language_prompts:
+        with (Path(__file__).parent / "language_strings.json").open(encoding="utf-8") as language_prompts:
             language_data = json.load(language_prompts)
         # set default translation data to broader translation
         data = language_data[locale[:2]]
