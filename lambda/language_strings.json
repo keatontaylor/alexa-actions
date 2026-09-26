@@ -5,7 +5,7 @@
     "ERROR_400": "Could not communicate with home assistant. Please check the Amazon CloudWatch logs in the custom skill developer console.",
     "ERROR_ACOUSTIC": "Sorry I did not catch that... <break time='200ms'/> {}",
     "ERROR_CONFIG": "Sorry, I am having trouble, please check your configuration, in the custom skill and try again.",
-    "HELP_MESSAGE": "This skill should be only reactively while triggered via home assistant.",
+    "HELP_MESSAGE": "Start a question from Home Assistant, then answer yes, no, a number, or say my answer is followed by your response.",
     "OKAY": "Okay",
     "STRING": "You selected {}",
     "SELECTED": "You selected {}",
@@ -83,9 +83,6 @@
     "STOP_MESSAGE": "Adiós!",
     "WELCOME_MESSAGE": "Bienvenido a {}. El texto de entrada es: {}"
   },
-  "ft-FR": {
-    "SKILL_NAME": "Actionable notifications"
-  },
   "fr-CA": {
     "SKILL_NAME": "Actionable notifications"
   },
@@ -96,6 +93,12 @@
     "SKILL_NAME": "Ações customizadas"
   },
   "es-ES": {
+    "SKILL_NAME": "Acciones personalizadas"
+  },
+  "fr-FR": {
+    "SKILL_NAME": "Actionable notifications"
+  },
+  "es-US": {
     "SKILL_NAME": "Acciones personalizadas"
   }
 }

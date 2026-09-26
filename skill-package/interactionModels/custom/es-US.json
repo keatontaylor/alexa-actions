@@ -22,13 +22,15 @@
         {
           "name": "AMAZON.YesIntent",
           "samples": [
-            "ja"
+            "si"
           ]
         },
         {
           "name": "AMAZON.NoIntent",
           "samples": [
-            "nein"
+            "no",
+            "no gracias",
+            "claro que no"
           ]
         },
         {
@@ -92,8 +94,8 @@
             }
           ],
           "samples": [
-            "{Dates} um {Times}",
-            "um {Times}",
+            "{Dates} a las {Times}",
+            "a las {Times}",
             "{Dates}"
           ]
         },
@@ -110,8 +112,8 @@
             }
           ],
           "samples": [
-            "meine Antwort ist {FreeText}",
-            "ich antworte {FreeText}"
+            "mi respuesta es {FreeText}",
+            "respondo {FreeText}"
           ]
         }
       ],

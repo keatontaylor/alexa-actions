@@ -21,11 +21,15 @@
         },
         {
           "name": "AMAZON.YesIntent",
-          "samples": ["si"]
+          "samples": [
+            "si"
+          ]
         },
         {
           "name": "AMAZON.NoIntent",
-          "samples": ["no"]
+          "samples": [
+            "no"
+          ]
         },
         {
           "name": "String",
@@ -35,7 +39,9 @@
               "type": "AMAZON.Person"
             }
           ],
-          "samples": ["{Strings}"]
+          "samples": [
+            "{Strings}"
+          ]
         },
         {
           "name": "Select",
@@ -45,7 +51,9 @@
               "type": "Selections"
             }
           ],
-          "samples": ["{Selections}"]
+          "samples": [
+            "{Selections}"
+          ]
         },
         {
           "name": "Number",
@@ -55,7 +63,9 @@
               "type": "AMAZON.NUMBER"
             }
           ],
-          "samples": ["{Numbers}"]
+          "samples": [
+            "{Numbers}"
+          ]
         },
         {
           "name": "Duration",
@@ -65,7 +75,9 @@
               "type": "AMAZON.DURATION"
             }
           ],
-          "samples": ["{Durations}"]
+          "samples": [
+            "{Durations}"
+          ]
         },
         {
           "name": "Date",
@@ -79,7 +91,28 @@
               "type": "AMAZON.TIME"
             }
           ],
-          "samples": ["{Dates} a las {Times}", "a las {Times}", "{Dates}"]
+          "samples": [
+            "{Dates} a las {Times}",
+            "a las {Times}",
+            "{Dates}"
+          ]
+        },
+        {
+          "name": "AMAZON.FallbackIntent",
+          "samples": []
+        },
+        {
+          "name": "FreeText",
+          "slots": [
+            {
+              "name": "FreeText",
+              "type": "AMAZON.SearchQuery"
+            }
+          ],
+          "samples": [
+            "mi respuesta es {FreeText}",
+            "respondo {FreeText}"
+          ]
         }
       ],
       "types": [
@@ -88,7 +121,10 @@
             {
               "name": {
                 "value": "Amazon Prime",
-                "synonyms": ["Amazon", "Amazon Video"]
+                "synonyms": [
+                  "Amazon",
+                  "Amazon Video"
+                ]
               }
             },
             {

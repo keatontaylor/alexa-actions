@@ -97,6 +97,23 @@
             "a {Times}",
             "{Dates}"
           ]
+        },
+        {
+          "name": "AMAZON.FallbackIntent",
+          "samples": []
+        },
+        {
+          "name": "FreeText",
+          "slots": [
+            {
+              "name": "FreeText",
+              "type": "AMAZON.SearchQuery"
+            }
+          ],
+          "samples": [
+            "ma réponse est {FreeText}",
+            "je réponds {FreeText}"
+          ]
         }
       ],
       "types": [
