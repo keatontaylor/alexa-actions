@@ -22,3 +22,15 @@ The [Alexa simulator](https://developer.amazon.com/en-US/docs/alexa/devconsole/a
 The simulator and local tests cannot establish Fire TV power behavior, far-field recognition with background noise, device-specific microphone/screen timing, or whether every physical device sends `SessionEndedRequest`. Those require reports from device owners. No physical-device validation is claimed by a passing local suite.
 
 Official documentation checked on 2026-09-26. Software checks do not prove an Alexa-hosted deployment or live event delivery.
+
+## Docker checks for current HA
+
+The official HA image contains the actual validators and script engine. Run these commands from the repository (PowerShell/Linux shells both support the quoted current-directory mount):
+
+```sh
+docker run --rm --network none --entrypoint python --mount "type=bind,source=${PWD},target=/repo,readonly" ghcr.io/home-assistant/home-assistant:2026.9.3 /repo/scripts/check_home_assistant.py
+docker run --rm --network none --entrypoint python --mount "type=bind,source=${PWD},target=/repo,readonly" ghcr.io/home-assistant/home-assistant:2026.9.3 /repo/scripts/check_managed_notifications.py
+node scripts/check_node_red.mjs
+```
+
+These use temporary HA state and fake outgoing launch actions. No real home, Alexa account or device is contacted. The Node-RED check exercises its exported flow's request construction with test-only values; it is not a live Node-RED delivery test.
