@@ -32,7 +32,7 @@
         {
           "name": "AMAZON.NoIntent",
           "samples": [
-            "nÃ£o"
+            "não"
           ]
         },
         {
@@ -96,8 +96,8 @@
             }
           ],
           "samples": [
-            "{Dates} Ã s {Times}",
-            "Ã s {Times}",
+            "{Dates} às {Times}",
+            "às {Times}",
             "{Dates}"
           ]
         },

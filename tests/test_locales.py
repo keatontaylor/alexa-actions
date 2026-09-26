@@ -93,3 +93,12 @@ def test_navigate_home_completes_pending_question(fake_ha):
     result = invoke(kind="IntentRequest", intent="AMAZON.NavigateHomeIntent", attributes=launched["sessionAttributes"])
     assert result["response"]["shouldEndSession"] is True
     assert fake_ha.events[0]["event_response_type"] == "ResponseNone"
+
+
+def test_translations_keep_original_unicode():
+    strings = json.loads((ROOT / "lambda/language_strings.json").read_text(encoding="utf-8"))
+    assert "você" in strings["pt"]["ERROR_404"]
+    assert "l'entité" in strings["fr"]["ERROR_404"]
+    for path in MODELS.glob("*.json"):
+        content = path.read_text(encoding="utf-8")
+        assert not re.search(r"[\u00c2\u00c3][\u0080-\u00bf]", content)
