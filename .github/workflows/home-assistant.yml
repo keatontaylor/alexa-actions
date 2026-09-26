@@ -19,3 +19,8 @@ jobs:
           --mount type=bind,source=${{ github.workspace }},target=/repo,readonly
           ghcr.io/home-assistant/home-assistant:2026.9.3
           /repo/scripts/check_managed_notifications.py
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check Node-RED launch example without accounts
+        run: node scripts/check_node_red.mjs

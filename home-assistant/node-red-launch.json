@@ -1,0 +1,84 @@
+[
+  {
+    "id": "alexa-example-tab",
+    "type": "tab",
+    "label": "Alexa question example",
+    "disabled": false,
+    "info": "Manual launch using core nodes. Configure HA_URL, HA_TOKEN, ALEXA_ENTITY in Node-RED environment."
+  },
+  {
+    "id": "alexa-example-inject",
+    "type": "inject",
+    "z": "alexa-example-tab",
+    "name": "Ask test question",
+    "props": [],
+    "repeat": "",
+    "once": false,
+    "x": 140,
+    "y": 100,
+    "wires": [
+      [
+        "alexa-example-request"
+      ]
+    ]
+  },
+  {
+    "id": "alexa-example-request",
+    "type": "function",
+    "z": "alexa-example-tab",
+    "name": "Build HA script call",
+    "func": "const base = env.get(\"HA_URL\");\nconst token = env.get(\"HA_TOKEN\");\nconst entity = env.get(\"ALEXA_ENTITY\");\nif (!base || !token || !entity) {\n    node.error(\"Set HA_URL, HA_TOKEN and ALEXA_ENTITY before sending a question.\");\n    return null;\n}\nmsg.method = \"POST\";\nmsg.url = base.replace(/\\/+$/, \"\") + \"/api/services/script/activate_alexa_actionable_notification\";\nmsg.headers = {\"Authorization\": \"Bearer \" + token, \"Content-Type\": \"application/json\"};\nmsg.payload = {text: \"Did the Node-RED question work?\", event_id: \"node_red_test\",\n               alexa_device: entity, suppress_confirmation: false};\nreturn msg;\n",
+    "outputs": 1,
+    "timeout": 0,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 350,
+    "y": 100,
+    "wires": [
+      [
+        "alexa-example-http"
+      ]
+    ]
+  },
+  {
+    "id": "alexa-example-http",
+    "type": "http request",
+    "z": "alexa-example-tab",
+    "name": "Call HA script",
+    "method": "use",
+    "ret": "obj",
+    "paytoqs": "ignore",
+    "url": "",
+    "tls": "",
+    "persist": false,
+    "proxy": "",
+    "insecureHTTPParser": false,
+    "authType": "",
+    "senderr": false,
+    "headers": [],
+    "x": 560,
+    "y": 100,
+    "wires": [
+      [
+        "alexa-example-debug"
+      ]
+    ]
+  },
+  {
+    "id": "alexa-example-debug",
+    "type": "debug",
+    "z": "alexa-example-tab",
+    "name": "HA HTTP status only",
+    "active": true,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "statusCode",
+    "targetType": "msg",
+    "x": 790,
+    "y": 100,
+    "wires": []
+  }
+]

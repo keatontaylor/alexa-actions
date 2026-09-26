@@ -19,6 +19,7 @@ import urllib3
 from ask_sdk_core.dispatch_components import AbstractExceptionHandler
 from ask_sdk_core.dispatch_components import AbstractRequestHandler
 from ask_sdk_core.dispatch_components import AbstractRequestInterceptor
+from ask_sdk_core.dispatch_components import AbstractResponseInterceptor
 from ask_sdk_core.skill_builder import SkillBuilder
 from ask_sdk_core.utils import (
     get_account_linking_access_token,
@@ -582,6 +583,45 @@ class CatchAllExceptionHandler(AbstractExceptionHandler):
         return _handle_response(handler_input, data[prompts.ERROR_CONFIG])
 
 
+class DiagnosticsInterceptor(AbstractRequestInterceptor):
+    def process(self, handler_input):
+        envelope = handler_input.request_envelope
+        request = envelope.request
+        intent = getattr(request, "intent", None)
+        system = envelope.context.system if envelope.context else None
+        device = system.device if system else None
+        supported = device.supported_interfaces if device else None
+        interfaces = (
+            sorted(
+                external
+                for field, external in supported.attribute_map.items()
+                if getattr(supported, field, None) is not None
+            )
+            if supported
+            else []
+        )
+        logger.info(
+            "request type=%s intent=%s locale=%s id=%s interfaces=%s",
+            request.object_type,
+            intent.name if intent else None,
+            getattr(request, "locale", None),
+            request.request_id,
+            interfaces,
+        )
+
+
+class ResponseDiagnosticsInterceptor(AbstractResponseInterceptor):
+    def process(self, handler_input, response):
+        client = handler_input.attributes_manager.request_attributes.get("ha")
+        logger.info(
+            "response id=%s end_session=%s ha_state=%s completed=%s",
+            handler_input.request_envelope.request.request_id,
+            response.should_end_session if response else None,
+            type(client.ha_state).__name__ if client else None,
+            client.completed if client else False,
+        )
+
+
 class LocalizationInterceptor(AbstractRequestInterceptor):
     """Add function to request attributes, that can load locale specific data."""
 
@@ -631,6 +671,8 @@ sb.add_request_handler(IntentReflectorHandler())
 sb.add_exception_handler(CatchAllExceptionHandler())
 
 # register response interceptors
+sb.add_global_request_interceptor(DiagnosticsInterceptor())
 sb.add_global_request_interceptor(LocalizationInterceptor())
+sb.add_global_response_interceptor(ResponseDiagnosticsInterceptor())
 
 lambda_handler = sb.lambda_handler()
