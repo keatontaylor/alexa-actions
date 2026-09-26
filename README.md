@@ -15,6 +15,9 @@ Thanks to [@alandtse](https://github.com/alandtse) for his continued worked on t
 ## 📧 CONTACT
 Join [Zeus Developers Discord](https://discord.gg/yw2DkWZKpB) to get help with your integration
 
+## Testing and current deployment
+See [Testing without an Echo](docs/testing.md) for local checks, PR ZIP artifacts, supported Lambda targets, and simulator testing.
+
 ## 📝 CONTRIBUTING
 Want to help us maintain this awesome feature? 
 

@@ -551,6 +551,7 @@ class CancelOrStopIntentHandler(AbstractRequestHandler):
 
         return _handle_response(handler_input, speak_output)
 
+
 class FallbackHandler(AbstractRequestHandler):
     """Handler for Fallback."""
 
@@ -562,11 +563,12 @@ class FallbackHandler(AbstractRequestHandler):
         """Handle Fallback."""
         logger.info("Fallback Handler triggered")
         ha_obj = HomeAssistant(handler_input)
-        #reason = handler_input.request_envelope.request.reason
-        #if reason == SessionEndedReason.EXCEEDED_MAX_REPROMPTS or reason == SessionEndedReason.USER_INITIATED:
+        # reason = handler_input.request_envelope.request.reason
+        # if reason == SessionEndedReason.EXCEEDED_MAX_REPROMPTS or reason == SessionEndedReason.USER_INITIATED:
         ha_obj.post_ha_event(RESPONSE_NONE, RESPONSE_NONE)
 
         return handler_input.response_builder.response
+
 
 class SessionEndedRequestHandler(AbstractRequestHandler):
     """Handler for Session End."""

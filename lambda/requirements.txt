@@ -1,4 +1,7 @@
-isodate~=0.6.0
-pydantic~=1.10.4
-typing-extensions~=4.10.0
-ask-sdk~=1.19.0
+ask-sdk-core==1.19.0
+ask-sdk-model==1.82.0
+ask-sdk-runtime==1.19.0
+isodate==0.6.1
+pydantic==1.10.26
+typing-extensions>=4.10,<5
+urllib3>=2.6,<3
