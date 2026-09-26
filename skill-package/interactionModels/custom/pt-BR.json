@@ -32,7 +32,7 @@
         {
           "name": "AMAZON.NoIntent",
           "samples": [
-            "não"
+            "nÃ£o"
           ]
         },
         {
@@ -96,9 +96,26 @@
             }
           ],
           "samples": [
-            "{Dates} às {Times}",
-            "às {Times}",
+            "{Dates} Ã s {Times}",
+            "Ã s {Times}",
             "{Dates}"
+          ]
+        },
+        {
+          "name": "AMAZON.FallbackIntent",
+          "samples": []
+        },
+        {
+          "name": "FreeText",
+          "slots": [
+            {
+              "name": "FreeText",
+              "type": "AMAZON.SearchQuery"
+            }
+          ],
+          "samples": [
+            "minha resposta é {FreeText}",
+            "respondo {FreeText}"
           ]
         }
       ],

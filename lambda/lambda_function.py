@@ -325,13 +325,13 @@ class StringIntentHandler(AbstractRequestHandler):
 
     def can_handle(self, handler_input):
         """Check for Select Intent."""
-        return is_intent_name("String")(handler_input)
+        return is_intent_name("String")(handler_input) or is_intent_name("FreeText")(handler_input)
 
     def handle(self, handler_input):
         """Handle String Intent."""
         logger.info("String Intent Handler triggered")
         ha_obj = HomeAssistant(handler_input)
-        strings = _slot_value(handler_input, "Strings")
+        strings = _slot_value(handler_input, "FreeText") or _slot_value(handler_input, "Strings")
         logger.debug("String intent received")
         if not strings:
             raise ValueError("String slot is missing")
@@ -471,8 +471,9 @@ class CancelOrStopIntentHandler(AbstractRequestHandler):
 
     def can_handle(self, handler_input):
         """Check for Cancel and Stop Intent."""
-        return is_intent_name("AMAZON.CancelIntent")(handler_input) or is_intent_name("AMAZON.StopIntent")(
-            handler_input
+        return any(
+            is_intent_name(name)(handler_input)
+            for name in ("AMAZON.CancelIntent", "AMAZON.StopIntent", "AMAZON.NavigateHomeIntent")
         )
 
     def handle(self, handler_input):
@@ -517,6 +518,18 @@ class SessionEndedRequestHandler(AbstractRequestHandler):
             ha_obj.post_ha_event(RESPONSE_NONE, RESPONSE_NONE)
 
         return handler_input.response_builder.response
+
+
+class HelpIntentHandler(AbstractRequestHandler):
+    def can_handle(self, handler_input):
+        return is_intent_name("AMAZON.HelpIntent")(handler_input)
+
+    def handle(self, handler_input):
+        ha_obj = HomeAssistant(handler_input)
+        speech = ha_obj.language_strings[prompts.HELP_MESSAGE]
+        if isinstance(ha_obj.ha_state, HaState) and ha_obj.ha_state.event_id and not ha_obj.completed:
+            return handler_input.response_builder.speak(speech + " " + ha_obj.ha_state.text).ask("").response
+        return _handle_response(handler_input, speech)
 
 
 class IntentReflectorHandler(AbstractRequestHandler):
@@ -574,14 +587,14 @@ class LocalizationInterceptor(AbstractRequestInterceptor):
 
     def process(self, handler_input):
         """Load locale specific data."""
-        locale = handler_input.request_envelope.request.locale
-        logger.info(f"Locale is {locale[:2]}")
+        locale = handler_input.request_envelope.request.locale or "en-US"
+        logger.info("Locale is %s", locale)
 
         # localized strings stored in language_strings.json
         with (Path(__file__).parent / "language_strings.json").open(encoding="utf-8") as language_prompts:
             language_data = json.load(language_prompts)
         # set default translation data to broader translation
-        data = language_data[locale[:2]]
+        data = {**language_data["en"], **language_data.get(locale[:2], {})}
         # if a more specialized translation exists, then select it instead
         # example: "fr-CA" will pick "fr" translations first, but if "fr-CA" translation exists,
         #          then pick that instead
@@ -611,6 +624,7 @@ sb.add_request_handler(DateTimeIntentHandler())
 sb.add_request_handler(CancelOrStopIntentHandler())
 sb.add_request_handler(FallbackHandler())
 sb.add_request_handler(SessionEndedRequestHandler())
+sb.add_request_handler(HelpIntentHandler())
 sb.add_request_handler(IntentReflectorHandler())
 
 # register exception handlers
