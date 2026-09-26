@@ -20,7 +20,12 @@ See [deployment and package tests](testing.md) for artifact selection. A fork's 
 
 ## 2. Create a Custom skill
 
-Open the [Alexa developer console](https://developer.amazon.com/alexa/console/ask), create a skill, and select the language matching your device or simulator. Choose the **Custom** interaction model. For hosting, choose **Alexa-Hosted (Python)** if Amazon will manage the backend, or **Provision your own** for your own Lambda. Select an available starter template and replace its backend/model in the following steps; the setup does not depend on a template being named Python or Customize.
+Open the [Alexa developer console](https://developer.amazon.com/alexa/console/ask). Amazon's [current creation guide](https://developer.amazon.com/en-US/docs/alexa/devconsole/create-a-skill-and-choose-the-interaction-model.html), updated August 11, 2026, describes the following flow:
+
+1. Select **Create Skill**. On **Name, Locale**, enter a skill name and the primary language/country matching your device or simulator, then select **Next**.
+2. On **Experience, Model, Hosting service**, select **Other** if no experience fits. Choose **Custom** as the model; look under **Remaining models** if it is not shown among the recommendations.
+3. For hosting, choose **Alexa-Hosted (Python)** if Amazon will manage the backend, or **Provision your own backend resources** for your own Lambda. For hosted skills, choose a hosting region close to your users.
+4. Select **Next**, choose an available starter template on **Templates**, and continue to **Review**. Select **Create Skill** and wait for the build to finish before opening **Build**. The next steps replace the starter backend/model; setup does not depend on a template being named Python or Customize.
 
 Amazon documents the [hosted creation flow](https://developer.amazon.com/en-US/docs/alexa/hosted-skills/alexa-hosted-skills-create.html) and the [self-managed Lambda flow](https://developer.amazon.com/en-US/docs/alexa/custom-skills/host-a-custom-skill-as-an-aws-lambda-function.html) separately. If hosted resource creation fails before the code editor is available, installing dependencies cannot repair that provisioning step.
 

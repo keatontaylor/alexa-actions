@@ -12,6 +12,8 @@ The review screened every branch's commit/file metadata and read patches for rel
 
 [MelleD's reviewed main tip](https://github.com/MelleD/alexa-actions/tree/9e805dffe371656745a64ac2b3a6ba75d4d548ee) has 11 unique commits and shares merge base `a1a1e5501d909431fd434afb686fb3b16e3ede80` with upstream. It documents a self-managed Tailscale container deployment, rather than a replacement for the standard Alexa-hosted/ZIP setup. The [new setup walkthrough](alexa-setup.md) credits that work and separates the routes. The earlier [Tailscale proposal #251](https://github.com/keatontaylor/alexa-actions/pull/251) is closed; it uses the fork's older master branch, not its revised main README.
 
+Amazon's [creation documentation](https://developer.amazon.com/en-US/docs/alexa/devconsole/create-a-skill-and-choose-the-interaction-model.html), updated August 11, 2026, now describes Name/Locale, Experience/Model/Hosting, Templates, and Review pages. The new walkthrough follows that flow and includes Other/Remaining models rather than relying on a Python or Customize template label.
+
 The following corrections are required before describing it as an upstream setup path:
 
 - [HA's Tailscale integration](https://www.home-assistant.io/integrations/tailscale/) monitors the tailnet; it does not make HA reachable. A real client or suitable subnet route must be installed.
