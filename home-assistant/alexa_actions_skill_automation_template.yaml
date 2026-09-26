@@ -8,13 +8,13 @@ blueprint:
         small discriptive of the code : "This allows you to not only talk using you alexa device but also get responses and take actions accordingly!"
 
     This blueprint relies on a toggle Helper (boolean) as a trigger, there are two reasons for this.
-    
-    - I can action this from any other routine / automation  just by turning the toggle value to on. 
+
+    - I can action this from any other routine / automation  just by turning the toggle value to on.
       so if i turn a light on i have an automation to turn the toggle on
-    
+
     - This also allows me to have the automation repeat its self, depending on your answer in the action just turn the toggle on and off again and the routine will restart
       this prevents from having to turn the phisical device on and off (Why? ex: light would flicker)
-      Lets say i use this to turn the cellar light off. 
+      Lets say i use this to turn the cellar light off.
       when i turn the light on, I have an automation turn a helper toggle to on as well and obviously when i turn the light off the toggle will be switched to off too.
       this automation is triggered by this toggle and then waits a specified time to let Alexa ask, in this case "is someone still in the cellar" if no one answers the light will be turned off.
       if i answer yes then the toggle will be turned off then on again. and the automation restarts.
@@ -28,13 +28,13 @@ blueprint:
       selector:
        entity:
           domain: input_boolean
-          
-    
+
+
     AlexaResponceTriggerTimer:
       name: Wait time on responce toggle
       description: 'When the toggle is active how log before alexa asks you something.
-      
-      0 = immediate.' 
+
+      0 = immediate.'
 
       default: 0
       selector:
@@ -43,26 +43,26 @@ blueprint:
           max: 3600
           unit_of_measurement: seconds
           step: 1
-          mode: slider          
+          mode: slider
 
     after_time:
       name: Start time
       description: The time of day from which the automation is allowed to run
       selector:
         time: {}
-      default: 0:00:00
+      default: "00:00:00"
 
     before_time:
       name: End time
       description: The time of day to which the automation is allowed to run
       selector:
         time: {}
-      default: 23:59:59
+      default: "23:59:59"
 
     weekday:
       name: Day of the week to allow notifications
       description: 'Change options if you want to include or exclude any specific day.
-        
+
         All days are selected by default.'
       default:
       - mon
@@ -97,25 +97,25 @@ blueprint:
       description: This is an optional trigger that needs to be ON for the automation to work
       default: ''
       selector:
-        entity:    
+        entity: {}
 
     AlexaBlockTrigger:
       name: (OPTIONAL) Blocking entity
       description: If this entity's state is on, it will prevent the automation from running. E.g. sleepmode, guestmode or away mode.
       default: ''
       selector:
-        entity:
+        entity: {}
 
     AlexaEeventId:
       name: (Unique) Alexa envent ID
       description: Alexa listens for this unique Id to follow this Routine
-      default: actionable_notification_      
+      default: actionable_notification_
 
 
     AlexaEventMessage:
       name: Alexa's Question
       description: What does alexa ask you
-      default: What should i ask you?     
+      default: What should i ask you?
 
     AlexaOkay:
       name: Allow confirmation response
@@ -123,36 +123,37 @@ blueprint:
       default: true
       selector:
         boolean: {}
-        
+
     AlexaNotifier:
       name: Alexa Device
       description: whitch Alexadevice to use
       selector:
         entity:
-          domain: media_player  
+          domain: media_player
 
     AlexaResponceActionYes:
       name: Action to take when aswer is "YES"
-      default: 
+      default: []
       selector:
-        action: 
+        action: {}
 
     AlexaResponceActionNo:
       name: Action to take when answer is "NO"
-      default: 
+      default: []
       selector:
-        action: 
-        
+        action: {}
+
     AlexaResponceActionIgnore:
       name: Action to take when "IGNORED"
-      default: 
+      default: []
       selector:
-        action: 
+        action: {}
 
-  
+
 variables:
   condition_entity: !input AlexaStopTrigger
   blocker_entity: !input AlexaBlockTrigger
+  allow_confirmation: !input AlexaOkay
 
 
 trigger:
@@ -183,7 +184,7 @@ trigger:
     event_data:
       event_id: !input 'AlexaEeventId'
       event_response_type: ResponseNo
-    id: AlexaNoID   
+    id: AlexaNoID
 
 
 condition:
@@ -191,12 +192,12 @@ condition:
     after: !input 'after_time'
     before: !input 'before_time'
     weekday: !input weekday
-    
-  - condition: template
-    value_template: "{{ (condition_entity == 'none') or (states[condition_entity].state == 'on') }}"
 
   - condition: template
-    value_template: "{{ (blocker_entity == 'none') or (states[blocker_entity].state == 'off') }}"
+    value_template: "{{ condition_entity in ['', 'none'] or is_state(condition_entity, 'on') }}"
+
+  - condition: template
+    value_template: "{{ blocker_entity in ['', 'none'] or is_state(blocker_entity, 'off') }}"
 
 action:
   - choose:
@@ -209,7 +210,7 @@ action:
               text: !input 'AlexaEventMessage'
               event_id: !input 'AlexaEeventId'
               alexa_device: !input 'AlexaNotifier'
-              suppress_confirmation: !input 'AlexaOkay'
+              suppress_confirmation: "{{ not allow_confirmation }}"
       - conditions:
           - condition: trigger
             id: AlexaYesID
@@ -222,5 +223,5 @@ action:
           - condition: trigger
             id: AlexaNoID
         sequence: !input 'AlexaResponceActionNo'
-        
+
 mode: single

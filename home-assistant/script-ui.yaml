@@ -1,0 +1,93 @@
+alias: Activate Alexa actionable notification
+description: Store one question and launch the custom skill on a chosen Alexa device.
+fields:
+  text:
+    name: Question
+    description: Question to speak. Existing message callers are also supported.
+    selector:
+      text: {}
+  message:
+    name: Message (legacy alias)
+    selector:
+      text: {}
+  event_id:
+    name: Event ID
+    required: true
+    selector:
+      text: {}
+  alexa_device:
+    name: Alexa Media Player entity
+    selector:
+      entity:
+        filter:
+          - integration: alexa_media
+            domain: media_player
+  device_id:
+    name: Alexa Devices device
+    selector:
+      device:
+        filter:
+          - integration: alexa_devices
+  transport:
+    name: Launch method
+    default: alexa_media
+    selector:
+      select:
+        options:
+          - alexa_media
+          - alexa_devices
+  invocation_name:
+    name: Skill invocation name (Alexa Devices)
+    default: actionable notifications
+    selector:
+      text: {}
+  suppress_confirmation:
+    name: Suppress Okay
+    default: false
+    selector:
+      boolean: {}
+sequence:
+  - variables:
+      question: "{{ text | default(message | default(''), true) }}"
+      correlation_id: "{{ event_id | default('') }}"
+      launch_method: "{{ transport | default('alexa_media') }}"
+  - if:
+      - condition: template
+        value_template: "{{ not question or not correlation_id }}"
+    then:
+      - stop: A question (text or message) and event_id are required.
+        error: true
+  - variables:
+      payload: >-
+        {{ {'text': question, 'event': correlation_id,
+            'suppress_confirmation': suppress_confirmation | default(false) | bool} | to_json }}
+  - if:
+      - condition: template
+        value_template: "{{ payload | length > 255 }}"
+    then:
+      - stop: Notification JSON exceeds the input_text limit of 255 characters. Shorten the question or event_id.
+        error: true
+  - action: input_text.set_value
+    target:
+      entity_id: input_text.alexa_actionable_notification
+    data:
+      value: "{{ payload }}"
+  - choose:
+      - conditions: "{{ launch_method == 'alexa_devices' }}"
+        sequence:
+          - action: alexa_devices.send_text_command
+            data:
+              device_id: "{{ device_id }}"
+              text_command: "{{ 'open ' ~ (invocation_name | default('actionable notifications')) }}"
+      - conditions: "{{ launch_method == 'alexa_media' }}"
+        sequence:
+          - action: media_player.play_media
+            target:
+              entity_id: "{{ alexa_device }}"
+            data:
+              media_content_type: skill
+              media_content_id: REPLACE_WITH_YOUR_SKILL_ID
+    default:
+      - stop: Unknown launch method. Choose alexa_media or alexa_devices.
+        error: true
+mode: single

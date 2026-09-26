@@ -1,0 +1,12 @@
+# Add this item to your automations.yaml list, or use its body in the automation UI.
+- alias: Alexa question answered yes
+  triggers:
+    - trigger: event
+      event_type: alexa_actionable_notification
+      event_data:
+        event_id: actionable.skill.test
+        event_response_type: ResponseYes
+  actions:
+    - action: persistent_notification.create
+      data:
+        message: The test question was answered yes.

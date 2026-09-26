@@ -1,0 +1,15 @@
+name: Home Assistant examples
+on: [pull_request, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  examples:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check with current HA validators and script engine
+        run: >-
+          docker run --rm --network none --entrypoint python
+          --mount type=bind,source=${{ github.workspace }},target=/repo,readonly
+          ghcr.io/home-assistant/home-assistant:2026.9.3
+          /repo/scripts/check_home_assistant.py
