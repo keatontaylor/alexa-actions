@@ -9,6 +9,8 @@ Thanks to the amazing HACS integrations [Alexa Media Player](https://github.com/
 ## 📥 Getting Started
 Start with the [current Home Assistant setup](docs/home-assistant.md) and [device-free tests](docs/testing.md). The [Wiki](https://github.com/keatontaylor/alexa-actions/wiki) also contains historical walkthroughs. This repository is not a HACS integration; install the skill and HA examples manually.
 
+For updates, failures and device reports, see [troubleshooting](docs/troubleshooting.md), [locales](docs/locales.md), [managed deadlines](docs/managed-notifications.md) and the [issue repair record](docs/issue-repair-status.md).
+
 ## 🤝 Acknowledgement
 Thanks to [@alandtse](https://github.com/alandtse) for his continued worked on the Alexa Media Player custom component.
 

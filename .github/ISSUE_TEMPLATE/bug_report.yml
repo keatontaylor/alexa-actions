@@ -54,6 +54,8 @@ body:
         - "Echo"
         - "Echo Show"
         - "Fire TV"
+        - "Alexa simulator (no device)"
+        - "Fire TV Cube"
         - "Other"
   - type: input
     id: otherdevices
@@ -62,9 +64,30 @@ body:
       description: "Type you device if you selected other in the dropdown"
     validations:
       required: false
+  - type: input
+    id: ha-version
+    attributes:
+      label: Home Assistant version and launch integration
+      description: Include HA Core version and Alexa Media Player or official Alexa Devices.
+    validations:
+      required: true
+  - type: input
+    id: hosting-locale
+    attributes:
+      label: Skill hosting, runtime and locale
+      description: Alexa-hosted or self-managed Lambda, runtime if known, model/device locale, and release or PR artifact used.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps and request/event results
+      description: Include the launch method, spoken answer, intent in Skill I/O, response event type/ID, and script trace. For managed mode include request_id. Redact tokens and personal identifiers.
+    validations:
+      required: true
   - type: textarea
     id: logs
     attributes:
       label: "Relevant log output"
-      description: "Please copy and paste any relevant log output. This will be automatically formatted into code, so no need for backticks."
+      description: "Include request/response summary and HA HTTP status lines. Remove access tokens, Authorization headers and personal data. Do not paste a full request envelope."
       render: "shell"
