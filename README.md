@@ -7,7 +7,7 @@ Alexa Actionable Notifications allows Home Assistant users to create interaction
 Thanks to the amazing HACS integrations [Alexa Media Player](https://github.com/custom-components/alexa_media_player/) this allows you to not only talk using you alexa device but also get responses and take actions accordingly!
 
 ## 📥 Getting Started
-To get started, head over to the [Wiki](https://github.com/keatontaylor/alexa-actions/wiki).
+Start with the [current Home Assistant setup](docs/home-assistant.md) and [device-free tests](docs/testing.md). The [Wiki](https://github.com/keatontaylor/alexa-actions/wiki) also contains historical walkthroughs. This repository is not a HACS integration; install the skill and HA examples manually.
 
 ## 🤝 Acknowledgement
 Thanks to [@alandtse](https://github.com/alandtse) for his continued worked on the Alexa Media Player custom component.
