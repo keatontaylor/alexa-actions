@@ -13,3 +13,9 @@ jobs:
           --mount type=bind,source=${{ github.workspace }},target=/repo,readonly
           ghcr.io/home-assistant/home-assistant:2026.9.3
           /repo/scripts/check_home_assistant.py
+      - name: Exercise managed timeouts and duplicate handling
+        run: >-
+          docker run --rm --network none --entrypoint python
+          --mount type=bind,source=${{ github.workspace }},target=/repo,readonly
+          ghcr.io/home-assistant/home-assistant:2026.9.3
+          /repo/scripts/check_managed_notifications.py
