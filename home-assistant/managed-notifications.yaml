@@ -1,0 +1,184 @@
+# Optional HA package. Requires the original question helper and the session-context backend.
+counter:
+  alexa_actionable_request:
+    name: Alexa actionable request sequence
+    restore: true
+input_text:
+  alexa_actionable_pending:
+    max: 255
+    initial: ''
+  alexa_actionable_completed:
+    max: 255
+    initial: ''
+script:
+  activate_alexa_actionable_notification_managed:
+    alias: Activate managed Alexa actionable notification
+    description: Serialize questions and emit one managed result per request, including HA timeouts.
+    fields:
+      text:
+        name: Question
+        description: Question to speak. Existing message callers are also supported.
+        selector:
+          text: {}
+      message:
+        name: Message (legacy alias)
+        selector:
+          text: {}
+      event_id:
+        name: Event ID
+        required: true
+        selector:
+          text: {}
+      alexa_device:
+        name: Alexa Media Player entity
+        selector:
+          entity:
+            filter:
+            - integration: alexa_media
+              domain: media_player
+      device_id:
+        name: Alexa Devices device
+        selector:
+          device:
+            filter:
+            - integration: alexa_devices
+      transport:
+        name: Launch method
+        default: alexa_media
+        selector:
+          select:
+            options:
+            - alexa_media
+            - alexa_devices
+      invocation_name:
+        name: Skill invocation name (Alexa Devices)
+        default: actionable notifications
+        selector:
+          text: {}
+      suppress_confirmation:
+        name: Suppress Okay
+        default: false
+        selector:
+          boolean: {}
+      timeout_seconds:
+        name: Answer deadline (seconds)
+        default: 60
+        selector:
+          number:
+            min: 1
+            max: 600
+            mode: box
+    sequence:
+    - action: counter.increment
+      target:
+        entity_id: counter.alexa_actionable_request
+    - variables:
+        question: '{{ text | default(message | default(''''), true) }}'
+        correlation_id: '{{ event_id | default('''') }}'
+        launch_method: '{{ transport | default(''alexa_media'') }}'
+        request_id: '{{ context.id ~ ''-'' ~ states(''counter.alexa_actionable_request'') }}'
+    - if:
+      - condition: template
+        value_template: '{{ not question or not correlation_id }}'
+      then:
+      - stop: A question (text or message) and event_id are required.
+        error: true
+    - variables:
+        payload: "{{ {'text': question, 'event': correlation_id, 'request_id': request_id,\n    'suppress_confirmation':\
+          \ suppress_confirmation | default(false) | bool} | to_json }}"
+    - if:
+      - condition: template
+        value_template: '{{ payload | length > 255 }}'
+      then:
+      - stop: Notification JSON exceeds the input_text limit of 255 characters. Shorten the question or event_id.
+        error: true
+    - action: input_text.set_value
+      target:
+        entity_id: input_text.alexa_actionable_notification
+      data:
+        value: '{{ payload }}'
+    - action: input_text.set_value
+      target:
+        entity_id: input_text.alexa_actionable_pending
+      data:
+        value: '{{ {''event_id'': correlation_id, ''request_id'': request_id} | to_json | to_json }}'
+    - action: input_text.set_value
+      target:
+        entity_id: input_text.alexa_actionable_completed
+      data:
+        value: ''
+    - choose:
+      - conditions: '{{ launch_method == ''alexa_devices'' }}'
+        sequence:
+        - action: alexa_devices.send_text_command
+          data:
+            device_id: '{{ device_id }}'
+            text_command: '{{ ''open '' ~ (invocation_name | default(''actionable notifications'')) }}'
+          continue_on_error: true
+      - conditions: '{{ launch_method == ''alexa_media'' }}'
+        sequence:
+        - action: media_player.play_media
+          target:
+            entity_id: '{{ alexa_device }}'
+          data:
+            media_content_type: skill
+            media_content_id: REPLACE_WITH_YOUR_SKILL_ID
+          continue_on_error: true
+      default:
+      - stop: Unknown launch method. Choose alexa_media or alexa_devices.
+        error: true
+    - wait_template: '{{ is_state(''input_text.alexa_actionable_completed'', request_id) }}'
+      timeout:
+        seconds: '{{ timeout_seconds | default(60) }}'
+      continue_on_timeout: true
+    - if:
+      - condition: template
+        value_template: '{{ not wait.completed }}'
+      then:
+      - event: alexa_actionable_notification_timeout
+        event_data:
+          event_id: '{{ correlation_id }}'
+          request_id: '{{ request_id }}'
+          event_response: ResponseNone
+          event_response_type: ResponseNone
+      - wait_template: '{{ is_state(''input_text.alexa_actionable_completed'', request_id) }}'
+        timeout: 10
+        continue_on_timeout: false
+    mode: queued
+    max: 10
+automation:
+- id: alexa_actionable_response_broker
+  alias: Alexa managed response broker
+  triggers:
+  - trigger: event
+    event_type: alexa_actionable_notification
+  - trigger: event
+    event_type: alexa_actionable_notification_timeout
+  actions:
+  - variables:
+      incoming: '{{ trigger.event.data }}'
+      pending: '{{ states(''input_text.alexa_actionable_pending'') | from_json({}) }}'
+  - condition: template
+    value_template: '{{ incoming.get(''request_id'') and incoming.get(''request_id'') == pending.get(''request_id'')
+      and incoming.get(''event_id'') == pending.get(''event_id'') }}'
+  - action: input_text.set_value
+    target:
+      entity_id: input_text.alexa_actionable_pending
+    data:
+      value: ''
+  - action: input_text.set_value
+    target:
+      entity_id: input_text.alexa_actionable_completed
+    data:
+      value: '{{ incoming[''request_id''] }}'
+  - event: alexa_actionable_notification_managed
+    event_data:
+      event_id: '{{ incoming[''event_id''] }}'
+      request_id: '{{ incoming[''request_id''] }}'
+      event_response: '{{ incoming[''event_response''] }}'
+      event_response_type: '{{ incoming[''event_response_type''] }}'
+      event_person_id: '{{ incoming.get(''event_person_id'') }}'
+      event_device_id: '{{ incoming.get(''event_device_id'') }}'
+      raw_event: '{{ incoming }}'
+  mode: queued
+  max: 50

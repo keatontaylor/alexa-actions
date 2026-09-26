@@ -40,7 +40,7 @@ Listen to `alexa_actionable_notification` in Developer Tools > Events. The publi
 
 Import the [blueprint](../home-assistant/alexa_actions_skill_automation_template.yaml) and set its trigger helper, Echo entity, question, and unique event ID. Optional condition/blocking entities may be left empty. **Allow confirmation response** means Alexa says Okay; it is converted to the inverse `suppress_confirmation` flag. Empty optional actions are valid lists.
 
-The basic script holds one pending question in one global helper. Starting another question before the first skill launch reads it can overwrite it. For reliable unanswered-question handling and serialized requests, use the separate managed example when available; neither the basic script nor the original blueprint can guarantee that Amazon sends a silence callback on every screen device.
+The basic script holds one pending question in one global helper. Starting another question before the first skill launch reads it can overwrite it. For reliable unanswered-question handling and serialized requests, use the [managed deadline example](managed-notifications.md); neither the basic script nor the original blueprint can guarantee that Amazon sends a silence callback on every screen device.
 
 ## Authentication diagnostics
 
