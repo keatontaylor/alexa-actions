@@ -2,6 +2,8 @@
 
 This repository contains an Alexa skill and HA scripts/blueprints. It is not a HACS custom integration. Adding it as an **Integration** custom repository produces the repository-structure error shown in recent reports: there is no `custom_components/<domain>` integration here. Install the skill and examples below manually. Alexa Media Player is a separate HACS integration. A `hacs.json` file alone cannot turn this repository into an integration; see [HACS integration requirements](https://www.hacs.xyz/docs/publish/integration/).
 
+Create or update the skill using the [Alexa setup walkthrough](alexa-setup.md), which covers current console steps and separate hosting routes.
+
 ## Install the helper and script
 
 Merge [configuration.yaml](../home-assistant/configuration.yaml) into your existing sections. If you use `script: !include scripts.yaml`, keep the helper under `input_text:` in configuration.yaml and put the script ID and nested body in scripts.yaml, without the `script:` wrapper. For the single-script UI YAML editor, paste [script-ui.yaml](../home-assistant/script-ui.yaml), which starts at `alias:`. Use the ID `activate_alexa_actionable_notification` so existing automations and the blueprint find it. Reload scripts after editing and verify the helper exists as `input_text.alexa_actionable_notification`.
@@ -44,6 +46,6 @@ The basic script holds one pending question in one global helper. Starting anoth
 
 ## Authentication diagnostics
 
-The Lambda must reach your external HA HTTPS URL. A 401 means check the linked/long-lived token; a 404 on `/api/states/input_text.alexa_actionable_notification` means check the helper and URL. Updating HA Cloud's account-linking settings cannot create a missing helper. In modern HA, Developer Tools **Actions** is where old tutorials' **Services** calls are run.
+For the standard backend, the Lambda must reach your external HA HTTPS URL. Private-network deployments need an actual network connection and matching backend transport; see the [Tailscale route](alexa-setup.md#private-home-assistant-through-tailscale). A 401 means check the linked/long-lived token; a 404 on `/api/states/input_text.alexa_actionable_notification` means check the helper and URL. Updating HA Cloud's account-linking settings cannot create a missing helper. In modern HA, Developer Tools **Actions** is where old tutorials' **Services** calls are run.
 
 Based on the current [script syntax](https://www.home-assistant.io/docs/scripts/), [selectors](https://www.home-assistant.io/docs/blueprint/selectors/), [templating](https://www.home-assistant.io/docs/templating/), and [event triggers](https://www.home-assistant.io/docs/automation/trigger/), checked 2026-09-26. The runnable examples are checked using Home Assistant 2026.9.3's actual validators and script engine, without a live Amazon account.
