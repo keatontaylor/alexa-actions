@@ -332,7 +332,7 @@ class StringIntentHandler(AbstractRequestHandler):
         """Handle String Intent."""
         logger.info("String Intent Handler triggered")
         ha_obj = HomeAssistant(handler_input)
-        strings = _slot_value(handler_input, "FreeText") or _slot_value(handler_input, "Strings")
+        strings = _slot_value(handler_input, "FreeTextValue") or _slot_value(handler_input, "Strings")
         logger.debug("String intent received")
         if not strings:
             raise ValueError("String slot is missing")

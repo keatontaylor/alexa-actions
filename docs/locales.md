@@ -4,7 +4,7 @@ Import the complete JSON model for the device/test locale, then Save and Build i
 
 Each model declares Yes, No, Cancel, Stop, Help and Fallback. Numbers use `AMAZON.NUMBER`, rather than restricting the UK model to four digits. The French prompt override is `fr-FR` (correcting `ft-FR`). Unknown/missing backend locales fall back to English instead of throwing a lookup error. This fallback does not advertise a new locale or create a model for it.
 
-The new **FreeText** intent uses `AMAZON.SearchQuery` and emits the same `ResponseString` event as the older String intent. Amazon requires a carrier phrase in intent samples; a bare `{FreeText}` sample is not supported. Say:
+The new **FreeText** intent uses `AMAZON.SearchQuery` and emits the same `ResponseString` event as the older String intent. Amazon requires a carrier phrase in intent samples; a bare `{FreeTextValue}` sample is not supported. Say:
 
 | Language | Example |
 | --- | --- |
