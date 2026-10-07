@@ -105,13 +105,13 @@
           "name": "FreeText",
           "slots": [
             {
-              "name": "FreeText",
+              "name": "FreeTextValue",
               "type": "AMAZON.SearchQuery"
             }
           ],
           "samples": [
-            "la mia risposta è {FreeText}",
-            "rispondo {FreeText}"
+            "la mia risposta è {FreeTextValue}",
+            "rispondo {FreeTextValue}"
           ]
         }
       ],

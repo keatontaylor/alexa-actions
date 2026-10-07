@@ -27,13 +27,14 @@ def test_models_have_handler_slot_contracts_and_valid_phrase_samples(locale):
     assert {"AMAZON.YesIntent", "AMAZON.NoIntent", "AMAZON.FallbackIntent", "AMAZON.HelpIntent"} <= set(names)
     expected = {
         "String": ("Strings", None),
-        "FreeText": ("FreeText", "AMAZON.SearchQuery"),
+        "FreeText": ("FreeTextValue", "AMAZON.SearchQuery"),
         "Number": ("Numbers", "AMAZON.NUMBER"),
         "Duration": ("Durations", "AMAZON.DURATION"),
         "Select": ("Selections", "Selections"),
     }
     for intent in intents:
         declared = {slot["name"] for slot in intent.get("slots", [])}
+        assert intent["name"] not in declared
         for sample in intent.get("samples", []):
             assert set(re.findall(r"{([^}]+)}", sample)) <= declared
         if intent["name"] in expected:
@@ -42,15 +43,19 @@ def test_models_have_handler_slot_contracts_and_valid_phrase_samples(locale):
             if slot_type:
                 assert intent["slots"][0]["type"] == slot_type
         if intent["name"] == "FreeText":
-            assert all(sample.replace("{FreeText}", "").strip() for sample in intent["samples"])
-            assert all(sample.count("{FreeText}") == 1 for sample in intent["samples"])
+            assert all(sample.replace("{FreeTextValue}", "").strip() for sample in intent["samples"])
+            assert all(sample.count("{FreeTextValue}") == 1 for sample in intent["samples"])
 
 
 @pytest.mark.parametrize("locale", LOCALES)
 @pytest.mark.parametrize("intent", ["AMAZON.YesIntent", "AMAZON.NoIntent", "FreeText", "AMAZON.HelpIntent"])
 def test_regional_sdk_dispatch(fake_ha, locale, intent):
     launched = invoke(locale=locale)
-    slots = {"FreeText": {"name": "FreeText", "value": "leave the kitchen lights on"}} if intent == "FreeText" else {}
+    slots = (
+        {"FreeTextValue": {"name": "FreeTextValue", "value": "leave the kitchen lights on"}}
+        if intent == "FreeText"
+        else {}
+    )
     result = invoke(
         kind="IntentRequest", intent=intent, slots=slots, locale=locale, attributes=launched["sessionAttributes"]
     )
