@@ -1,0 +1,54 @@
+# No real credentials, published ports, or outbound network during scenarios.
+services:
+  node-red:
+    image: nodered/node-red:5.0.8@sha256:b5adb6c9dd29ab80c852d82bc87daed84e729dcff9b00ca1bf958e6de470f2c1
+    entrypoint: [/bin/sh, -c]
+    command:
+      - node /repo/scripts/prepare_node_red.mjs /tmp/flows.json && exec node /usr/src/node-red/node_modules/node-red/red.js --userDir /tmp/node-red /tmp/flows.json
+    environment:
+      HA_URL: http://home-assistant:8765
+      HA_TOKEN: simulation-only-token
+      ALEXA_ENTITY: media_player.one
+    volumes:
+      - ../..:/repo:ro
+    healthcheck:
+      test: [CMD, node, -e, "fetch('http://127.0.0.1:1880').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+    read_only: true
+    tmpfs: [/tmp]
+  skill:
+    image: python:3.13-slim@sha256:7c61056e61ac89e852de05f3dc6fa51a6dd2181797bceed46aa725dd7cb2cd3b
+    entrypoint: [python, -W, 'ignore::SyntaxWarning', -I, -S, /repo/scripts/serve_skill.py]
+    command: ["/repo/dist/${PACKAGE_NAME:-AlexaActionsNoBinaryLinux.zip}"]
+    environment:
+      HOME_ASSISTANT_URL: http://home-assistant:8765
+      TOKEN: simulation-only-token
+      ENABLE_COMMANDS: 'true'
+    volumes:
+      - ../..:/repo:ro
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/health', timeout=2)"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+    read_only: true
+    # Native extensions from the binary ZIP must be mmap-able as executable.
+    tmpfs: ['/tmp:exec']
+  home-assistant:
+    # Home Assistant 2026.9.3, including its actual Python and script dependencies.
+    image: ghcr.io/home-assistant/home-assistant@sha256:d8922685169707fd91e8b9729902d975f06157d005e422874d201e0261dda196
+    entrypoint: [python, /repo/scripts/check_end_to_end.py]
+    volumes:
+      - ../..:/repo:ro
+    depends_on:
+      skill:
+        condition: service_healthy
+      node-red:
+        condition: service_healthy
+    read_only: true
+    tmpfs: [/tmp]
+networks:
+  default:
+    internal: true

@@ -13,7 +13,7 @@ Choose one hosting route:
 | Route | Backend installation | Network requirement |
 | --- | --- | --- |
 | Alexa-hosted Python | Source and requirements in the console's `lambda` folder; Amazon installs dependencies | HA must be reachable from the hosted service |
-| Self-managed AWS Lambda | Complete Python 3.13 / x86_64 ZIP from this repository's Build Linux artifacts | HA must be reachable from your Lambda |
+| Self-managed AWS Lambda | Complete Python 3.13 / x86_64 ZIP from this repository's CI artifacts | HA must be reachable from your Lambda |
 | Private HA through Tailscale | Separate container/proxy deployment, described below | Both HA and the backend must actually connect to the tailnet |
 
 See [deployment and package tests](testing.md) for artifact selection. A fork's Docker image and this repository's ZIP are different deployment routes.

@@ -1,6 +1,6 @@
 # Alexa Actionable notifications ![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/keatontaylor/alexa-actions?label=Release&style=flat-square) ![GitHub](https://img.shields.io/github/license/keatontaylor/alexa-actions?label=Licence&style=flat-square)
 
-[![CodeQL](https://github.com/keatontaylor/alexa-actions/actions/workflows/codeql.yml/badge.svg)](https://github.com/keatontaylor/alexa-actions/actions/workflows/codeql.yml) [![Formatting & Linting](https://github.com/keatontaylor/alexa-actions/actions/workflows/formating_linting.yml/badge.svg)](https://github.com/keatontaylor/alexa-actions/actions/workflows/formating_linting.yml) [![Build Linux](https://github.com/keatontaylor/alexa-actions/actions/workflows/build-linux.yml/badge.svg?event=release)](https://github.com/keatontaylor/alexa-actions/actions/workflows/build-linux.yml)
+[![CI](https://github.com/keatontaylor/alexa-actions/actions/workflows/ci.yml/badge.svg)](https://github.com/keatontaylor/alexa-actions/actions/workflows/ci.yml)
 
 Alexa Actionable Notifications allows Home Assistant users to create interactions and workflows using Alexa.
 

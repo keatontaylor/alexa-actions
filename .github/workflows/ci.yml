@@ -1,0 +1,247 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [master]
+    tags: ['v*']
+  workflow_dispatch:
+  schedule:
+    - cron: '31 12 * * 0'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  quality:
+    name: Formatting, lint and workflow syntax
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - run: python -m pip install ruff==0.17.0 black==26.10.1
+      - run: python -m ruff check .
+      - run: python -m black --check .
+      - name: Validate Actions syntax and shell commands
+        run: >-
+          docker run --rm --network none --volume "$PWD:/repo:ro" --workdir /repo
+          rhysd/actionlint:1.7.12@sha256:b1934ee5f1c509618f2508e6eb47ee0d3520686341fec936f3b79331f9315667 -color
+
+  sdk:
+    name: SDK / ${{ matrix.os }} / Python ${{ matrix.python }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {os: ubuntu-latest, python: '3.8'}
+          - {os: ubuntu-latest, python: '3.13'}
+          - {os: windows-latest, python: '3.13'}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+          cache: pip
+          cache-dependency-path: |
+            requirements-test.txt
+            lambda/requirements.txt
+      - run: python -m pip install -r requirements-test.txt
+      - run: python -m pip check
+      - name: SDK, models, real HTTP/TLS and branch coverage
+        run: >-
+          python -m pytest --cov --cov-report=term-missing
+          --cov-report=xml:reports/coverage.xml --cov-report=json:reports/coverage.json
+          --junitxml=reports/junit.xml
+      - name: Test summary
+        if: always()
+        run: python scripts/test_summary.py reports
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-reports-${{ matrix.os }}-python${{ matrix.python }}
+          path: reports/
+          retention-days: 14
+
+  examples:
+    name: Home Assistant and Node-RED examples
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      HA_IMAGE: ghcr.io/home-assistant/home-assistant@sha256:d8922685169707fd91e8b9729902d975f06157d005e422874d201e0261dda196
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate templates, blueprints, launch and presence routing
+        run: >-
+          docker run --rm --network none --entrypoint python
+          --mount "type=bind,source=$PWD,target=/repo,readonly"
+          "$HA_IMAGE" /repo/scripts/check_home_assistant.py
+      - name: Deadlines, immediate replies, duplicate callbacks and overlapping questions
+        run: >-
+          docker run --rm --network none --entrypoint python
+          --mount "type=bind,source=$PWD,target=/repo,readonly"
+          "$HA_IMAGE" /repo/scripts/check_managed_notifications.py
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node scripts/check_node_red.mjs
+
+  package:
+    name: Package / ${{ matrix.kind }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        kind: [binary, pure]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+          cache: pip
+          cache-dependency-path: lambda/requirements.txt
+      - run: python scripts/build_package.py --kind ${{ matrix.kind }}
+      - name: Import using only packaged dependencies
+        run: python scripts/check_package.py dist/*.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: alexa-actions-${{ matrix.kind }}-python313
+          path: dist/
+          if-no-files-found: error
+
+  simulation:
+    name: Packaged HTTP simulation / ${{ matrix.kind }}
+    needs: package
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {kind: binary, package: AlexaActionsWithBinaryLinux.zip}
+          - {kind: pure, package: AlexaActionsNoBinaryLinux.zip}
+    env:
+      PACKAGE_NAME: ${{ matrix.package }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: alexa-actions-${{ matrix.kind }}-python313
+          path: dist
+      - name: Real HA script engine and packaged ASK handler on an isolated network
+        run: >-
+          docker compose -f tests/simulation/compose.yaml up
+          --abort-on-container-exit --exit-code-from home-assistant
+      - name: Collect simulation logs
+        if: always()
+        run: |
+          mkdir -p reports
+          docker compose -f tests/simulation/compose.yaml logs --no-color > reports/simulation.log
+      - name: Remove simulation containers and network
+        if: always()
+        run: docker compose -f tests/simulation/compose.yaml down --volumes --remove-orphans
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: simulation-reports-${{ matrix.kind }}
+          path: reports/
+          retention-days: 14
+
+  release-validation:
+    name: Release artifact preflight
+    needs: package
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: alexa-actions-*-python313
+          path: dist
+          merge-multiple: true
+      - name: Validate actual artifacts without publishing
+        run: |
+          TAG=$(sed -n 's/^# VERSION /v/p' lambda/lambda_function.py)
+          python scripts/prepare_release.py "$TAG"
+
+  security:
+    name: CodeQL / ${{ matrix.language }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      security-events: write
+      actions: read
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [python, actions]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: github/codeql-action/init@v4
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: none
+      - uses: github/codeql-action/analyze@v4
+        with:
+          category: /language:${{ matrix.language }}
+
+  passed:
+    name: CI passed
+    if: always()
+    needs: [quality, sdk, examples, package, simulation, release-validation, security]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Require every gate, including failed or skipped dependencies
+        env:
+          RESULTS: ${{ toJSON(needs) }}
+        run: |
+          python - <<'PY'
+          import json, os
+          results = json.loads(os.environ['RESULTS'])
+          failures = {name: job['result'] for name, job in results.items() if job['result'] != 'success'}
+          if failures:
+              raise SystemExit(f'CI gates did not pass: {failures}')
+          PY
+
+  release:
+    name: Publish tested release
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    needs: passed
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      RELEASE_TAG: ${{ github.ref_name }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: alexa-actions-*-python313
+          path: dist
+          merge-multiple: true
+      - name: Verify tag version, tested source and package checksums
+        run: python scripts/prepare_release.py "$RELEASE_TAG"
+      - name: Create draft with both tested packages, then publish
+        run: |
+          gh release create "$RELEASE_TAG" dist/*.zip dist/*.json dist/SHA256SUMS --verify-tag --draft --generate-notes --title "$RELEASE_TAG"
+          gh release edit "$RELEASE_TAG" --draft=false
