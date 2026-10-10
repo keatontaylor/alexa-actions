@@ -17,7 +17,8 @@ import sys
 
 def get_logger(debug: bool):
     logger = logging.getLogger(__name__)
-    logger.addHandler(logging.StreamHandler(sys.stdout))
+    if not logger.handlers:
+        logger.addHandler(logging.StreamHandler(sys.stdout))
 
     # Set logging level
     logger.setLevel(logging.DEBUG if debug else logging.INFO)

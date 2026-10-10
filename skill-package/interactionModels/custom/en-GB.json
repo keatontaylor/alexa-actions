@@ -113,6 +113,19 @@
             "my answer is {FreeTextValue}",
             "answer {FreeTextValue}"
           ]
+        },
+        {
+          "name": "Command",
+          "slots": [
+            {
+              "name": "CommandText",
+              "type": "AMAZON.SearchQuery"
+            }
+          ],
+          "samples": [
+            "do {CommandText}",
+            "tell home assistant {CommandText}"
+          ]
         }
       ],
       "types": [
