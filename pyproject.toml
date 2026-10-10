@@ -20,3 +20,14 @@ select = ["E4", "E7", "E9", "F"]
 
 [tool.black]
 line-length = 120
+
+[tool.coverage.run]
+branch = true
+source = ["lambda"]
+
+[tool.coverage.report]
+show_missing = true
+fail_under = 85
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

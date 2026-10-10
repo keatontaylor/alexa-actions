@@ -1,3 +1,6 @@
 -r lambda/requirements.txt
-pytest>=8,<10
+pytest>=8,<8.4; python_version < "3.9"
+pytest>=8,<10; python_version >= "3.9"
+pytest-cov>=5,<6; python_version < "3.9"
+pytest-cov>=6,<8; python_version >= "3.9"
 PyYAML>=6,<7
