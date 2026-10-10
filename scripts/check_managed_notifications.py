@@ -84,11 +84,6 @@ async def check():
         launch_sequence = await async_validate_actions_config(hass, launch_definition["sequence"])
         launcher = Script(hass, launch_sequence, "launcher", "script", script_mode="parallel")
 
-        async def turn_on(call):
-            tasks.append(hass.async_create_task(launcher.async_run(dict(call.data["variables"]), context=Context())))
-
-        hass.services.async_register("script", "turn_on", turn_on)
-
         async def launch_script(call):
             await launcher.async_run(dict(call.data), context=Context())
 

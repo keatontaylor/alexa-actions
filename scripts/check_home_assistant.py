@@ -45,6 +45,7 @@ async def check():
         hass.services.async_register("media_player", "play_media", capture)
         hass.services.async_register("alexa_devices", "send_text_command", capture)
         launch_definition = SCRIPT_ENTITY_SCHEMA(yaml.load_yaml(str(ROOT / "home-assistant/launch-ui.yaml")))
+        assert config["script"]["alexa_actionable_launch"] == yaml.load_yaml(str(ROOT / "home-assistant/launch-ui.yaml"))
         launch_sequence = await async_validate_actions_config(hass, launch_definition["sequence"])
         launcher = Script(hass, launch_sequence, "launcher", "script", script_mode="parallel")
 

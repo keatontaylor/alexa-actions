@@ -4,6 +4,8 @@
 
 Install **both** scripts from [configuration.yaml](../home-assistant/configuration.yaml). The question script calls the shared `alexa_actionable_launch` script. For UI editors, create `activate_alexa_actionable_notification` from [script-ui.yaml](../home-assistant/script-ui.yaml) and `alexa_actionable_launch` from [launch-ui.yaml](../home-assistant/launch-ui.yaml). Put your Skill ID in the launcher and update both scripts together.
 
+For repository maintenance, the two UI files own their script definitions. Run `python scripts/sync_ha_examples.py` to regenerate the file-based wrappers in `configuration.yaml`; tests check that both forms match.
+
 Optional `confirmation_yes` and `confirmation_no` replace Okay. Omit a field for the default, or pass an empty string for silence. `suppress_confirmation: true` overrides custom replies. Replies are snapshotted with the question and spoken only after a successful HA POST. Their JSON shares the helper's 255-character limit.
 
 ```yaml
