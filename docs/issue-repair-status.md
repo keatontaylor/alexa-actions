@@ -1,5 +1,16 @@
 # Recent issue repair record (2026-09-26)
 
+## Follow-up review (2026-10-10)
+
+| Report | Current evidence | Change / remaining validation |
+| --- | --- | --- |
+| [#286](https://github.com/keatontaylor/alexa-actions/issues/286) Hosted deployment failure | Reporter isolated the failure to requirements. `urllib3>=2.6,<3` is incompatible with hosted Python 3.8; the unbounded suggested downgrade can still select v2. | Requirements now select urllib3 1.26 below Python 3.10 and retain v2 for modern Lambda. Python 3.8 CI and a simulated legacy OpenSSL import check cover dependency compatibility; Amazon deployment/TLS still need a hosted tester. |
+| [#284](https://github.com/keatontaylor/alexa-actions/issues/284) FreeText intent/slot collision | Already fixed on master by [#285](https://github.com/keatontaylor/alexa-actions/pull/285), merged October 7. All ten models use `FreeTextValue`; the handler and model-contract tests were updated together. | Deploy the current backend and rebuild the complete matching locale model. No duplicate implementation needed. |
+| [Discussion #274](https://github.com/keatontaylor/alexa-actions/discussions/274) Alexa+ | October report: voice launch succeeds, but an HA Alexa Devices text launch plays the question without delivering YesIntent, followed by a delayed end callback. Hosted dependencies and invocation interception were also reported. | Dependency failure addressed above; [launch comparison and invocation guidance](troubleshooting.md#alexa-and-launch-methods) added. HA deadlines can bound no-response completion; Alexa+ routing remains unverified and unresolved. |
+| [#276](https://github.com/keatontaylor/alexa-actions/issues/276) Fire TV Cube wakes TV | Still open; follow-up asks how to install the diagnostic update, with no new device/request evidence. | Existing [device guidance](troubleshooting.md#fire-tv-cube-and-screen-devices) remains applicable. No tested power-control fix. |
+
+## Original review
+
 Reviewed all 38 reports created since 2024-01-07 through 2026-09-26, including 16 stale-bot closures, plus older #171 and the HACS structure screenshot. A closure is not evidence a defect was fixed. These are proposed PR fixes with software checks; they are not released updates or physical-device confirmations.
 
 Merge the stacked PRs in order: **#277 packaging → #278 HA compatibility → #279 sessions/errors → #280 managed deadlines → #281 locales/models → **#282 diagnostics/update guide****. After each predecessor lands, retarget the next PR to `master` before merging. Each diff initially targets the preceding branch, and each PR describes its dependency and validation. Use the PR's Build Linux artifacts or development source for tester feedback. Existing release assets are unchanged until a reviewed release is published.
