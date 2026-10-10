@@ -50,6 +50,7 @@ def server(tls=False):
     http = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
     if tls:
         context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+        context.minimum_version = ssl.TLSVersion.TLSv1_2
         fixtures = Path(__file__).parent / "fixtures"
         context.load_cert_chain(fixtures / "localhost-cert.pem", fixtures / "localhost-key.pem")
         http.socket = context.wrap_socket(http.socket, server_side=True)

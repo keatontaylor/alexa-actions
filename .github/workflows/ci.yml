@@ -197,6 +197,15 @@ jobs:
       - uses: github/codeql-action/analyze@v4
         with:
           category: /language:${{ matrix.language }}
+          output: reports/codeql
+      - name: Reject high and critical security findings
+        run: python scripts/check_sarif.py reports/codeql
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: codeql-reports-${{ matrix.language }}
+          path: reports/codeql/
+          retention-days: 14
 
   passed:
     name: CI passed
