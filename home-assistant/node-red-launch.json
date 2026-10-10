@@ -18,7 +18,7 @@
     "y": 100,
     "wires": [
       [
-        "alexa-example-request"
+        "alexa-sensor-prepare"
       ]
     ]
   },
@@ -27,7 +27,7 @@
     "type": "function",
     "z": "alexa-example-tab",
     "name": "Build HA script call",
-    "func": "const base = env.get(\"HA_URL\");\nconst token = env.get(\"HA_TOKEN\");\nconst entity = env.get(\"ALEXA_ENTITY\");\nif (!base || !token || !entity) {\n    node.error(\"Set HA_URL, HA_TOKEN and ALEXA_ENTITY before sending a question.\");\n    return null;\n}\nmsg.method = \"POST\";\nmsg.url = base.replace(/\\/+$/, \"\") + \"/api/services/script/activate_alexa_actionable_notification\";\nmsg.headers = {\"Authorization\": \"Bearer \" + token, \"Content-Type\": \"application/json\"};\nmsg.payload = {text: \"Did the Node-RED question work?\", event_id: \"node_red_test\",\n               alexa_device: entity, suppress_confirmation: false};\nreturn msg;\n",
+    "func": "const base = env.get(\"HA_URL\");\nconst token = env.get(\"HA_TOKEN\");\nconst options = msg.questionOptions || (msg.payload && typeof msg.payload === \"object\" ? msg.payload : {});\nconst transport = options.transport || env.get(\"ALEXA_TRANSPORT\") || \"alexa_media\";\nconst entity = options.alexa_device || env.get(\"ALEXA_ENTITY\");\nconst device = options.device_id || env.get(\"ALEXA_DEVICE_ID\");\nconst grouped = Array.isArray(options.targets) && options.targets.length > 0;\nif (!base || !token || (!grouped && (transport === \"alexa_media\" ? !entity : !device)) || ![\"alexa_media\", \"alexa_devices\"].includes(transport)) {\n    node.error(\"Set HA_URL, HA_TOKEN and a target for the selected launch method.\");\n    return null;\n}\nif (msg.sensorRead) {\n    if (msg.statusCode !== 200 || !msg.payload || typeof msg.payload.state !== 'string' || [\"unknown\", \"unavailable\"].includes(msg.payload.state)) {\n        node.error(\"Sensor read failed; question was not sent.\"); return null;\n    }\n    options.text = \"The sensor reads \" + msg.payload.state + \" \" + (msg.payload.attributes?.unit_of_measurement || \"\") + \". Would you like me to act?\";\n}\nconst managed = options.managed === true || grouped;\nmsg.method = \"POST\";\nmsg.url = base.replace(/\\/+$/, \"\") + \"/api/services/script/activate_alexa_actionable_notification\" + (managed ? \"_managed\" : \"\");\nmsg.headers = {\"Authorization\": \"Bearer \" + token, \"Content-Type\": \"application/json\"};\nmsg.payload = {text: options.text || \"Did the Node-RED question work?\", event_id: options.event_id || \"node_red_test\", suppress_confirmation: options.suppress_confirmation ?? false};\nif (grouped) msg.payload.targets = options.targets;\nelse if (transport === \"alexa_media\") msg.payload.alexa_device = entity;\nelse Object.assign(msg.payload, {transport, device_id: device, invocation_name: options.invocation_name || env.get(\"ALEXA_INVOCATION\") || \"actionable notifications\"});\nfor (const key of [\"confirmation_yes\", \"confirmation_no\"]) if (typeof options[key] === \"string\") msg.payload[key] = options[key];\nif (managed) Object.assign(msg.payload, {timeout_seconds: options.timeout_seconds ?? 60, audio_only: options.audio_only ?? false});\nreturn msg;\n",
     "outputs": 1,
     "timeout": 0,
     "noerr": 0,
@@ -80,5 +80,39 @@
     "x": 790,
     "y": 100,
     "wires": []
+  },
+  {
+    "id": "alexa-sensor-prepare",
+    "type": "function",
+    "z": "alexa-example-tab",
+    "name": "Optional HA sensor read",
+    "func": "const sensor = env.get(\"HA_SENSOR\");\nif (!sensor) return [null, msg];\nconst base = env.get(\"HA_URL\"), token = env.get(\"HA_TOKEN\");\nif (!base || !token) { node.error(\"Set HA_URL and HA_TOKEN before reading a sensor.\"); return null; }\nmsg.questionOptions = msg.payload && typeof msg.payload === \"object\" ? {...msg.payload} : {};\nmsg.sensorRead = true; msg.method = \"GET\";\nmsg.url = base.replace(/\\/+$/, \"\") + \"/api/states/\" + encodeURIComponent(sensor);\nmsg.headers = {Authorization: \"Bearer \" + token};\nreturn [msg, null];",
+    "outputs": 2,
+    "x": 350,
+    "y": 180,
+    "wires": [
+      [
+        "alexa-sensor-read"
+      ],
+      [
+        "alexa-example-request"
+      ]
+    ]
+  },
+  {
+    "id": "alexa-sensor-read",
+    "type": "http request",
+    "z": "alexa-example-tab",
+    "name": "Read sensor state",
+    "method": "use",
+    "ret": "obj",
+    "url": "",
+    "x": 560,
+    "y": 180,
+    "wires": [
+      [
+        "alexa-example-request"
+      ]
+    ]
   }
 ]

@@ -1,5 +1,19 @@
 # Recent issue repair record (2026-09-26)
 
+## Discussion feature implementation (2026-10-10)
+
+| Discussion | Implementation | Verification limit |
+| --- | --- | --- |
+| #184 standalone commands | Opt-in Command intent and initial-session String/FreeText route to a separate command event; notification helper remains isolated. | Real SDK dispatch with fake HA; live recognition/launch still needs testing. |
+| #162 custom replies | Per-question Yes/No confirmations with snapshot, suppression and POST-error handling. | SDK tests; helper's complete JSON must fit 255 characters. |
+| #260 / #249 / #180 Node-RED and templates | Both transports, managed/group options, core REST sensor read and separate HA Jinja/JavaScript examples. | Request construction tested without live accounts. |
+| #225 presence and #163 blueprints | Ordered presence routes with fallback, two script blueprints and device UI selectors. | Real HA validators/script engine with fake outgoing launches. |
+| #165 / issues #118 and #166 multiple devices | Shared-request launches to individual targets; first answer wins, distinct silence counting, duplicate filtering and deadline. | No native speaker-group session; real Amazon launch timing still needs devices. |
+| #185 / issue #276 screen interruption | Audio-only routing excludes configured screen targets and uses an audio fallback. | This is avoidance, not a verified way to preserve video while the Cube runs the skill. |
+| #158 configuration follow-up | Private JSON and environment settings with legacy constant fallback. | Hosted JSON path supported by source; hosted console environment controls are not assumed. |
+| #183 refactoring | Separate settings, HA client, handlers and interceptors; one shared HA launcher. | Existing and new SDK/HA tests. |
+| #209 SaaS | Skipped at the user's request. | No hosted service or marketplace publication. |
+
 ## Follow-up review (2026-10-10)
 
 | Report | Current evidence | Change / remaining validation |
