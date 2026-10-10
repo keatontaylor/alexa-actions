@@ -6,7 +6,7 @@ The local suite uses the real Amazon ASK SDK and request envelopes. Fast tests u
 python -m venv .venv
 # Activate the environment for your OS.
 python -m pip install -r requirements-test.txt
-python -m pytest --cov --cov-report=term-missing --junitxml=reports/junit.xml
+python -m pytest --cov --cov-branch --cov-config=pyproject.toml --cov-report=term-missing --junitxml=reports/junit.xml
 python scripts/build_package.py --kind pure
 python scripts/check_package.py dist/AlexaActionsNoBinaryLinux.zip
 ```

@@ -58,7 +58,7 @@ jobs:
       - run: python -m pip check
       - name: SDK, models, real HTTP/TLS and branch coverage
         run: >-
-          python -m pytest --cov --cov-report=term-missing
+          python -m pytest --cov --cov-branch --cov-config=pyproject.toml --cov-report=term-missing
           --cov-report=xml:reports/coverage.xml --cov-report=json:reports/coverage.json
           --junitxml=reports/junit.xml
       - name: Test summary
