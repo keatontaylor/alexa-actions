@@ -10,6 +10,24 @@
 
 “You have no new notifications at this time” is not a prompt in this project's backend. That alone does not identify its source. For #275, establish whether this skill's LaunchRequest/application ID reached the selected endpoint before treating it as a helper or SDK error.
 
+## Alexa-hosted dependency failures
+
+[Issue #286](https://github.com/keatontaylor/alexa-actions/issues/286) reports a deployment failure that disappeared after changing urllib3. [Discussion #274](https://github.com/keatontaylor/alexa-actions/discussions/274) separately reports Python 3.8 and OpenSSL 1.0.2k on a hosted skill. `urllib3>=2.6,<3` cannot install on Python 3.8, and earlier v2 releases that support Python 3.8 still require OpenSSL 1.1.1 or later to import. Use the complete updated `lambda/requirements.txt`, which selects `urllib3>=1.26.20,<2` below Python 3.10. Do not use an unbounded `urllib3>=1.26.20`; it can resolve to v2. Restore your private settings, then save and deploy the development backend.
+
+The HTML/OAuth redirect shown in #286 alone does not identify a backend exception. If deployment still fails, establish whether it fails before the Code tab exists, while pip installs requirements, or when Lambda imports the handler; record the dependency error and hosting/runtime details. The legacy urllib3 branch is [unmaintained](https://urllib3.readthedocs.io/en/stable/v2-migration-guide.html). Use the self-managed Python 3.13 route for maintained urllib3; the hosted compatibility constraint does not upgrade Amazon's Python/OpenSSL.
+
+## Alexa+ and launch methods
+
+[Discussion #274](https://github.com/keatontaylor/alexa-actions/discussions/274) includes an October 2026 report from an en-AU Echo Dot: a spoken launch reached `LaunchRequest`, then `AMAZON.YesIntent`, and posted the HA event. An HA `alexa_devices.send_text_command` launch played the question with `shouldEndSession: false`, but the spoken Yes never reached the skill; Alexa+ responded independently and sent a delayed `SessionEndedRequest` roughly four minutes later. Both launches reported the same locale and interface list. This is evidence of a launch/routing difference on that tested setup, not proof that all Alexa+ devices or launch integrations behave alike. The repository has no verified fix for that routing behavior.
+
+Compare these paths with the same helper question and device:
+
+1. Say `open <invocation name>` aloud and answer Yes. Confirm LaunchRequest, YesIntent and a successful HA event POST in the safe summary logs.
+2. Launch through your configured HA integration and answer Yes. Check whether any IntentRequest arrives after the question; a successful helper GET alone does not prove the answer can reach the skill.
+3. If Alexa answers with its own notification message, try a distinct invocation name without `notifications`, save/build the model and update the HA launch name to match. Interception of names containing `notifications` is also reported in #274; this is a troubleshooting experiment, not a guaranteed fix.
+
+If only the HA launch loses the answer, use the spoken launch or a device/launch method you have verified. The backend cannot post a Yes/No response it never receives. [HA-managed deadlines](managed-notifications.md) can resolve the automation with `ResponseNone` without waiting for Amazon's delayed callback, but cannot restore microphone routing. Include device generation, locale, Alexa+ status, integration/action, request types, `shouldEndSession` and HA status codes when reporting results; keep tokens and full request envelopes private.
+
 ## Logs and personalization
 
 For self-managed Lambda, the execution role needs CloudWatch log-writing permissions; the signed-in viewer also needs permission to read the log group. An IAM permission error opening logs is not proof the Italian model failed. Use the [AWS logging guide](https://docs.aws.amazon.com/lambda/latest/dg/monitoring-cloudwatchlogs.html) and the hosted console's own code/log controls for Alexa-hosted skills. Do not apply self-managed runtime/IAM instructions to a hosted service you cannot administer.

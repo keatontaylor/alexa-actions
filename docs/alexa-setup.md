@@ -41,6 +41,8 @@ Amazon's [Build page reference](https://developer.amazon.com/en-US/docs/alexa/de
 
 In the **Code** tab, replace the starter backend with every source file from this repository's [lambda folder](../lambda), including `language_strings.json` and `requirements.txt`. Configure `HOME_ASSISTANT_URL`, `TOKEN`, and `VERIFY_SSL` at the top of your private deployed `lambda_function.py`; keep SSL verification enabled for a valid HTTPS endpoint. Save and deploy the development backend. Amazon runs pip from requirements during deployment; do not upload a self-managed deployment ZIP as the hosted source tree. The hosted service manages its runtime.
 
+Amazon currently documents Python 3.8 for [Alexa-hosted skills](https://developer.amazon.com/en-AU/docs/alexa/hosted-skills/build-a-skill-end-to-end-using-an-alexa-hosted-skill.html). Keep the complete requirements file: its Python version markers select `urllib3>=1.26.20,<2` for the legacy hosted runtime and `urllib3>=2.6,<3` for Python 3.10 and later. An unbounded `urllib3>=1.26.20` can still select an incompatible v2 release. The legacy urllib3 branch is [no longer maintained](https://urllib3.readthedocs.io/en/stable/v2-migration-guide.html); self-managed Python 3.13 Lambda remains the route using maintained urllib3. This compatibility fix does not upgrade Amazon's hosted runtime.
+
 ### Self-managed Lambda
 
 Create a Python 3.13 / x86_64 function in an appropriate AWS region for your Alexa users, with its execution role able to write CloudWatch logs. Install the complete tested ZIP with the handler `lambda_function.lambda_handler`, and restore your private backend settings before testing. If building locally, configure a private copy of the source before packaging and keep credentials out of Git. These settings are Python constants in the current upstream backend; `HA_URL` and `HA_TOKEN` environment variables from MelleD's fork do not configure this ZIP.
@@ -52,6 +54,8 @@ Copy your Skill ID from the skill list in the Alexa developer console. Add an **
 Enable development testing on the console's **Test** page and select the matching locale. Set a short test question in the HA helper, for example `{"text":"Did the test work?","event":"setup_test","suppress_confirmation":true}`, then say or type `open <invocation name>` in the simulator. Answer Yes and listen for `alexa_actionable_notification` in HA **Developer Tools > Events**. Expect `event_id: setup_test`, `event_response: ResponseYes`, and `event_response_type: ResponseYes`.
 
 Once manual simulator invocation works, run `script.activate_alexa_actionable_notification` with a test device using HA **Developer Tools > Actions**. For Alexa Media Player, insert your Skill ID into the script. For the built-in Alexa Devices integration, use its HA device ID and the installed invocation name. The simulator covers the backend without an Echo; a physical launch integration still needs a device owner to test it. See [device-free tests](testing.md) and [troubleshooting](troubleshooting.md).
+
+For Alexa+ devices, compare a spoken launch with the HA launch before relying on responses. A reported Alexa+ failure plays the question after `alexa_devices.send_text_command` but never routes the spoken answer to this skill. See [Alexa+ launch troubleshooting](troubleshooting.md#alexa-and-launch-methods).
 
 ## Private Home Assistant through Tailscale
 
