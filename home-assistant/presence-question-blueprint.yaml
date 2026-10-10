@@ -1,0 +1,46 @@
+blueprint:
+  name: Presence-aware Alexa question
+  description: Choose the first active configured presence route, then a fallback device. Screen targets can be avoided.
+  domain: script
+  input:
+    routes:
+      name: Ordered presence routes
+      description: List objects with presence_entity and target. The target contains transport and alexa_device or device_id.
+      default: []
+      selector:
+        object: {}
+    fallback:
+      name: Fallback target
+      default: {}
+      selector:
+        object: {}
+    audio_only:
+      name: Avoid targets marked screen
+      default: true
+      selector:
+        boolean: {}
+    invocation_name:
+      name: Skill invocation name
+      default: actionable notifications
+      selector:
+        text: {}
+fields:
+  text:
+    required: true
+    selector:
+      text: {}
+  event_id:
+    required: true
+    selector:
+      text: {}
+sequence:
+  - action: script.activate_alexa_actionable_notification_presence
+    data:
+      text: "{{ text }}"
+      event_id: "{{ event_id }}"
+      routes: !input routes
+      fallback: !input fallback
+      audio_only: !input audio_only
+      invocation_name: !input invocation_name
+mode: queued
+max: 10

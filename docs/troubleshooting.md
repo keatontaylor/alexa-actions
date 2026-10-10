@@ -36,6 +36,8 @@ For self-managed Lambda, the execution role needs CloudWatch log-writing permiss
 
 ## Fire TV Cube and screen devices
 
+For a tested routing workaround, use managed/presence questions with `audio_only: true`, mark Cube/TV targets `screen: true`, and provide an audio fallback. The HA engine checks that these devices are excluded from launches. This avoids interrupting that screen by launching the question elsewhere; it does not preserve video while the Cube itself runs the skill, and no physical screen/power fix is claimed.
+
 This backend emits no card, display or APL directive. A blank/default skill screen or TV wake after invoking a skill therefore needs launch-method/device evidence; the response code does not contain a tested HDMI/power-control fix. Compare manual invocation and the chosen HA launch action, record the generation and supportedInterfaces, and check Skill I/O/logs. Use an audio Echo for questions when keeping the TV asleep is essential. Do not assume that adding an APL document will prevent wake behavior. For missing silence callbacks, the HA-managed timeout can resolve the automation independently, but does not control the device's screen or microphone.
 
 ## Update and rollback

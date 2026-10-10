@@ -1,4 +1,3 @@
-# Optional HA package. Requires the original question helper and the session-context backend.
 counter:
   alexa_actionable_request:
     name: Alexa actionable request sequence
@@ -10,10 +9,13 @@ input_text:
   alexa_actionable_completed:
     max: 255
     initial: ''
+  alexa_actionable_group_silence:
+    max: 255
+    initial: ''
 script:
   activate_alexa_actionable_notification_managed:
     alias: Activate managed Alexa actionable notification
-    description: Serialize questions and emit one managed result per request, including HA timeouts.
+    description: Queue questions; fan out to selected devices and emit the first answer or an overall timeout.
     fields:
       text:
         name: Question
@@ -68,7 +70,65 @@ script:
             min: 1
             max: 600
             mode: box
+      confirmation_yes:
+        name: Confirmation Yes
+        description: Optional reply; an explicit empty string is silent.
+        selector:
+          text: {}
+      confirmation_no:
+        name: Confirmation No
+        description: Optional reply; an explicit empty string is silent.
+        selector:
+          text: {}
+      targets:
+        name: Device targets
+        description: 'Up to ten target objects. Each has transport and alexa_device or device_id; optional screen: true.'
+        default: []
+        selector:
+          object: {}
+      audio_only:
+        name: Avoid configured screen devices
+        default: false
+        selector:
+          boolean: {}
     sequence:
+    - variables:
+        selection_json: '{% set ns = namespace(valid=true, ids=[], targets=[]) %}
+
+          {% set raw = targets | default([]) %}{% set items = raw | from_json(none) if raw is string else raw %}
+
+          {% if items is none %}{% set ns.valid = false %}{% set items = [] %}{% elif not items %}{% set items = [{''transport'':
+          transport | default(''alexa_media''), ''alexa_device'': alexa_device | default(''''), ''device_id'': (device_id
+          if device_id is string else '''')}] %}{% endif %}
+
+          {% if items is string or items is mapping or items is not iterable %}{% set ns.valid = false %}
+
+          {% else %}{% for item in items %}
+
+          {% if item is not mapping %}{% set ns.valid = false %}
+
+          {% else %}{% set method = item.get(''transport'', ''alexa_media'') %}
+
+          {% set identity = item.get(''device_id'') if method == ''alexa_devices'' else item.get(''alexa_device'') %}
+
+          {% if item.get(''screen'', false) is not boolean or method not in [''alexa_media'', ''alexa_devices''] or identity
+          is not string or not identity or (method == ''alexa_media'' and not identity.startswith(''media_player.'')) %}{%
+          set ns.valid = false %}
+
+          {% elif not (audio_only | default(false) | bool and item.get(''screen'', false)) and [method, identity] not in ns.ids
+          %}
+
+          {% set ns.ids = ns.ids + [[method, identity]] %}{% set ns.targets = ns.targets + [item] %}
+
+          {% endif %}{% endif %}{% endfor %}{% endif %}
+
+          {{ {''valid'': ns.valid and 0 < ns.targets | length <= 10, ''targets'': ns.targets} | to_json }}'
+    - variables:
+        selection: '{{ selection_json | from_json if selection_json is string else selection_json }}'
+    - if: '{{ not selection[''valid''] }}'
+      then:
+      - stop: Supply 1-10 valid distinct targets; audio-only mode requires an unmarked audio target.
+        error: true
     - action: counter.increment
       target:
         entity_id: counter.alexa_actionable_request
@@ -77,6 +137,7 @@ script:
         correlation_id: '{{ event_id | default('''') }}'
         launch_method: '{{ transport | default(''alexa_media'') }}'
         request_id: '{{ context.id ~ ''-'' ~ states(''counter.alexa_actionable_request'') }}'
+        group: '{{ selection[''targets''] | length > 1 }}'
     - if:
       - condition: template
         value_template: '{{ not question or not correlation_id }}'
@@ -84,8 +145,10 @@ script:
       - stop: A question (text or message) and event_id are required.
         error: true
     - variables:
-        payload: "{{ {'text': question, 'event': correlation_id, 'request_id': request_id,\n    'suppress_confirmation':\
-          \ suppress_confirmation | default(false) | bool} | to_json }}"
+        payload: "{{ {'text': question, 'event': correlation_id, 'request_id': request_id,\n    'suppress_confirmation': suppress_confirmation\
+          \ | default(false) | bool} | combine({'group': true} if group else {}) | combine({'confirmation_yes': confirmation_yes}\
+          \ if confirmation_yes is defined else {}) | combine({'confirmation_no': confirmation_no} if confirmation_no is defined\
+          \ else {}) | to_json }}"
     - if:
       - condition: template
         value_template: '{{ payload | length > 255 }}'
@@ -101,32 +164,28 @@ script:
       target:
         entity_id: input_text.alexa_actionable_pending
       data:
-        value: '{{ {''event_id'': correlation_id, ''request_id'': request_id} | to_json | to_json }}'
+        value: '{{ {''event_id'': correlation_id, ''request_id'': request_id, ''expected'': selection[''targets''] | length}
+          | to_json | to_json }}'
     - action: input_text.set_value
       target:
         entity_id: input_text.alexa_actionable_completed
       data:
         value: ''
-    - choose:
-      - conditions: '{{ launch_method == ''alexa_devices'' }}'
+    - action: input_text.set_value
+      target:
+        entity_id: input_text.alexa_actionable_group_silence
+      data:
+        value: ''
+    - repeat:
+        for_each: '{{ selection[''targets''] }}'
         sequence:
-        - action: alexa_devices.send_text_command
+        - action: script.alexa_actionable_launch
           data:
-            device_id: '{{ device_id }}'
-            text_command: '{{ ''open '' ~ (invocation_name | default(''actionable notifications'')) }}'
+            transport: '{{ repeat.item.get(''transport'', ''alexa_media'') }}'
+            device_id: '{{ repeat.item.get(''device_id'', '''') }}'
+            alexa_device: '{{ repeat.item.get(''alexa_device'', '''') }}'
+            invocation_name: '{{ invocation_name | default(''actionable notifications'') }}'
           continue_on_error: true
-      - conditions: '{{ launch_method == ''alexa_media'' }}'
-        sequence:
-        - action: media_player.play_media
-          target:
-            entity_id: '{{ alexa_device }}'
-          data:
-            media_content_type: skill
-            media_content_id: REPLACE_WITH_YOUR_SKILL_ID
-          continue_on_error: true
-      default:
-      - stop: Unknown launch method. Choose alexa_media or alexa_devices.
-        error: true
     - wait_template: '{{ is_state(''input_text.alexa_actionable_completed'', request_id) }}'
       timeout:
         seconds: '{{ timeout_seconds | default(60) }}'
@@ -159,8 +218,29 @@ automation:
       incoming: '{{ trigger.event.data }}'
       pending: '{{ states(''input_text.alexa_actionable_pending'') | from_json({}) }}'
   - condition: template
-    value_template: '{{ incoming.get(''request_id'') and incoming.get(''request_id'') == pending.get(''request_id'')
-      and incoming.get(''event_id'') == pending.get(''event_id'') }}'
+    value_template: '{{ incoming is mapping and incoming.get(''request_id'') and incoming.get(''request_id'') == pending.get(''request_id'')
+      and incoming.get(''event_id'') == pending.get(''event_id'') and ''event_response'' in incoming and incoming.get(''event_response_type'')
+      in [''ResponseYes'',''ResponseNo'',''ResponseNone'',''ResponseString'',''ResponseSelect'',''ResponseNumeric'',''ResponseDuration'',''ResponseDateTime'']
+      }}'
+  - if: '{{ pending.get(''expected'', 1) > 1 and incoming.get(''event_response_type'') == ''ResponseNone'' and trigger.event.event_type
+      != ''alexa_actionable_notification_timeout'' }}'
+    then:
+    - if: '{{ incoming.get(''event_device_key'', '''') | length != 16 }}'
+      then:
+      - stop: Group silence without device identity waits for the overall deadline.
+    - variables:
+        silent: '{{ states(''input_text.alexa_actionable_group_silence'') | from_json([]) }}'
+    - if: '{{ incoming[''event_device_key''] in silent }}'
+      then:
+      - stop: Duplicate silent callback.
+    - action: input_text.set_value
+      target:
+        entity_id: input_text.alexa_actionable_group_silence
+      data:
+        value: '{{ (silent + [incoming[''event_device_key'']]) | to_json | to_json }}'
+    - if: '{{ silent | length + 1 < pending[''expected''] }}'
+      then:
+      - stop: Other group devices can still answer.
   - action: input_text.set_value
     target:
       entity_id: input_text.alexa_actionable_pending
@@ -180,5 +260,6 @@ automation:
       event_person_id: '{{ incoming.get(''event_person_id'') }}'
       event_device_id: '{{ incoming.get(''event_device_id'') }}'
       raw_event: '{{ incoming }}'
+      event_device_key: '{{ incoming.get(''event_device_key'') }}'
   mode: queued
   max: 50

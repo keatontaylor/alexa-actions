@@ -1,0 +1,7 @@
+{
+  "HOME_ASSISTANT_URL": "https://yourinstall.com",
+  "VERIFY_SSL": true,
+  "INCLUDE_DEVICE_ID": false,
+  "ENABLE_COMMANDS": false,
+  "DEBUG": false
+}

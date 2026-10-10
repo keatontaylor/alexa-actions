@@ -114,6 +114,18 @@
             "ma réponse est {FreeTextValue}",
             "je réponds {FreeTextValue}"
           ]
+        },
+        {
+          "name": "Command",
+          "slots": [
+            {
+              "name": "CommandText",
+              "type": "AMAZON.SearchQuery"
+            }
+          ],
+          "samples": [
+            "exécute {CommandText}"
+          ]
         }
       ],
       "types": [

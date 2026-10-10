@@ -10,7 +10,7 @@
 from typing import Optional
 
 # 3rd-Party Imports
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, StrictStr
 
 # Local Imports
 
@@ -25,4 +25,7 @@ class HaState(BaseModel):
     event_id: Optional[str] = None
     request_id: Optional[str] = None
     suppress_confirmation: bool = Field(default=False)
+    confirmation_yes: Optional[StrictStr] = None
+    confirmation_no: Optional[StrictStr] = None
+    group: bool = False
     text: str
