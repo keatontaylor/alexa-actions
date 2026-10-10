@@ -1,0 +1,63 @@
+script:
+  activate_alexa_actionable_notification_presence:
+    alias: Ask on a present person's configured device
+    fields:
+      text:
+        required: true
+        selector:
+          text: {}
+      event_id:
+        required: true
+        selector:
+          text: {}
+      routes:
+        default: []
+        selector:
+          object: {}
+      fallback:
+        required: true
+        selector:
+          object: {}
+      audio_only:
+        default: true
+        selector:
+          boolean: {}
+      timeout_seconds:
+        name: Answer deadline (seconds)
+        default: 60
+        selector:
+          number:
+            min: 1
+            max: 600
+            mode: box
+      invocation_name:
+        name: Skill invocation name (Alexa Devices)
+        default: actionable notifications
+        selector:
+          text: {}
+      suppress_confirmation:
+        name: Suppress Okay
+        default: false
+        selector:
+          boolean: {}
+    sequence:
+    - variables:
+        selected: '{% set ns = namespace(target=none) %}
+
+          {% for route in routes | default([]) %}
+
+          {% if ns.target is none and is_state(route[''presence_entity''], ''on'') and not (audio_only | default(true) | bool
+          and route[''target''].get(''screen'', false)) %}{% set ns.target = route[''target''] %}{% endif %}
+
+          {% endfor %}{{ ns.target if ns.target is not none else fallback }}'
+    - action: script.activate_alexa_actionable_notification_managed
+      data:
+        text: '{{ text }}'
+        event_id: '{{ event_id }}'
+        targets: '{{ [selected] | to_json }}'
+        audio_only: '{{ audio_only | default(true) }}'
+        timeout_seconds: '{{ timeout_seconds | default(60) }}'
+        invocation_name: '{{ invocation_name | default(''actionable notifications'') }}'
+        suppress_confirmation: '{{ suppress_confirmation | default(false) }}'
+    mode: queued
+    max: 10

@@ -1,5 +1,25 @@
 # Home Assistant setup
 
+## Launcher and custom confirmations
+
+Install **both** scripts from [configuration.yaml](../home-assistant/configuration.yaml). The question script calls the shared `alexa_actionable_launch` script. For UI editors, create `activate_alexa_actionable_notification` from [script-ui.yaml](../home-assistant/script-ui.yaml) and `alexa_actionable_launch` from [launch-ui.yaml](../home-assistant/launch-ui.yaml). Put your Skill ID in the launcher and update both scripts together.
+
+Optional `confirmation_yes` and `confirmation_no` replace Okay. Omit a field for the default, or pass an empty string for silence. `suppress_confirmation: true` overrides custom replies. Replies are snapshotted with the question and spoken only after a successful HA POST. Their JSON shares the helper's 255-character limit.
+
+```yaml
+action: script.activate_alexa_actionable_notification
+data:
+  text: "The temperature is {{ states('sensor.lounge_temperature') }} degrees. Turn off the heating?"
+  event_id: heating_question
+  alexa_device: media_player.lounge
+  confirmation_yes: Turning off the heating.
+  confirmation_no: Keeping the heating on.
+```
+
+Render Jinja in the calling automation's `data.text`. Templates pasted literally into the helper remain text; Lambda does not evaluate HA templates. Node-RED uses state lookup and JavaScript; see [its examples](node-red.md).
+
+Import [Managed Alexa question](../home-assistant/managed-question-blueprint.yaml) or [Presence-aware Alexa question](../home-assistant/presence-question-blueprint.yaml) after installing their [dependencies](managed-notifications.md). Call the resulting scripts with `text` and `event_id`. The managed blueprint has UI selectors for both transports and multiple devices; advanced targets can mix transports and mark screens.
+
 This repository contains an Alexa skill and HA scripts/blueprints. It is not a HACS custom integration. Adding it as an **Integration** custom repository produces the repository-structure error shown in recent reports: there is no `custom_components/<domain>` integration here. Install the skill and examples below manually. Alexa Media Player is a separate HACS integration. A `hacs.json` file alone cannot turn this repository into an integration; see [HACS integration requirements](https://www.hacs.xyz/docs/publish/integration/).
 
 Create or update the skill using the [Alexa setup walkthrough](alexa-setup.md), which covers current console steps and separate hosting routes.

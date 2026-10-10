@@ -1,0 +1,89 @@
+blueprint:
+  name: Managed Alexa question
+  description: Ask one or more configured devices, accepting the first answer or the overall deadline.
+  domain: script
+  input:
+    transport:
+      name: Launch method
+      default: alexa_media
+      selector:
+        select:
+          options: [alexa_media, alexa_devices]
+    media_players:
+      name: Alexa Media Player devices
+      default: []
+      selector:
+        entity:
+          filter:
+            - integration: alexa_media
+              domain: media_player
+          multiple: true
+    device_ids:
+      name: Alexa Devices devices
+      default: []
+      selector:
+        device:
+          filter:
+            - integration: alexa_devices
+          multiple: true
+    targets:
+      name: Advanced target objects (optional)
+      description: List objects with transport and alexa_device or device_id. Use individual devices, not speaker-group entities.
+      default: []
+      selector:
+        object: {}
+    invocation_name:
+      name: Skill invocation name
+      default: actionable notifications
+      selector:
+        text: {}
+    timeout_seconds:
+      name: Answer deadline
+      default: 60
+      selector:
+        number:
+          min: 1
+          max: 600
+    audio_only:
+      name: Avoid targets marked screen
+      default: false
+      selector:
+        boolean: {}
+fields:
+  text:
+    name: Question (HA templates can be passed by the calling automation)
+    required: true
+    selector:
+      text: {}
+  event_id:
+    required: true
+    selector:
+      text: {}
+  suppress_confirmation:
+    default: false
+    selector:
+      boolean: {}
+variables:
+  configured_targets: !input targets
+  selected_transport: !input transport
+  selected_players: !input media_players
+  selected_devices: !input device_ids
+  target_list: >-
+    {% set ns = namespace(items=[]) %}
+    {% if configured_targets %}{% set ns.items = configured_targets %}
+    {% elif selected_transport == 'alexa_devices' %}
+    {% for device in selected_devices %}{% set ns.items = ns.items + [{'transport': 'alexa_devices', 'device_id': device}] %}{% endfor %}
+    {% else %}{% for entity in selected_players %}{% set ns.items = ns.items + [{'alexa_device': entity}] %}{% endfor %}
+    {% endif %}{{ ns.items | to_json }}
+sequence:
+  - action: script.activate_alexa_actionable_notification_managed
+    data:
+      text: "{{ text }}"
+      event_id: "{{ event_id }}"
+      targets: "{{ target_list }}"
+      invocation_name: !input invocation_name
+      timeout_seconds: !input timeout_seconds
+      audio_only: !input audio_only
+      suppress_confirmation: "{{ suppress_confirmation | default(false) }}"
+mode: queued
+max: 10

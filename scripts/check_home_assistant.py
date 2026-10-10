@@ -44,6 +44,14 @@ async def check():
         hass.services.async_register("input_text", "set_value", capture)
         hass.services.async_register("media_player", "play_media", capture)
         hass.services.async_register("alexa_devices", "send_text_command", capture)
+        launch_definition = SCRIPT_ENTITY_SCHEMA(yaml.load_yaml(str(ROOT / "home-assistant/launch-ui.yaml")))
+        launch_sequence = await async_validate_actions_config(hass, launch_definition["sequence"])
+        launcher = Script(hass, launch_sequence, "launcher", "script", script_mode="parallel")
+
+        async def launch(call):
+            await launcher.async_run(dict(call.data), context=Context())
+
+        hass.services.async_register("script", "alexa_actionable_launch", launch)
         script = Script(hass, sequence, "example test", "script")
         # Exercise escaping, defaults, alias precedence and both transport branches.
         for parameters in [
@@ -102,6 +110,52 @@ async def check():
         assert confirmation.async_render(variables={"allow_confirmation": False}) is True
         for example in yaml.load_yaml(str(ROOT / "home-assistant/event-example.yaml")):
             assert await automation_config.async_validate_config_item(hass, "example", example) is not None
+        for filename in ["managed-question-blueprint.yaml", "presence-question-blueprint.yaml"]:
+            data = yaml.load_yaml(str(ROOT / "home-assistant" / filename))
+            script_blueprint = Blueprint(data, expected_domain="script", schema=BLUEPRINT_SCHEMA)
+            defaults = {name: item["default"] for name, item in script_blueprint.inputs.items() if "default" in item}
+            expanded_script = yaml.substitute(data, defaults)
+            expanded_script.pop("blueprint")
+            SCRIPT_ENTITY_SCHEMA(expanded_script)
+            await async_validate_actions_config(hass, expanded_script["sequence"])
+
+        presence_data = yaml.load_yaml(str(ROOT / "home-assistant/presence-routing.yaml"))
+        presence_definition = SCRIPT_ENTITY_SCHEMA(
+            presence_data["script"]["activate_alexa_actionable_notification_presence"]
+        )
+        presence_sequence = await async_validate_actions_config(hass, presence_definition["sequence"])
+        presence = Script(hass, presence_sequence, "presence", "script")
+        routed = []
+
+        async def managed_call(call):
+            data = dict(call.data)
+            if isinstance(data["targets"], str):
+                data["targets"] = json.loads(data["targets"])
+            routed.append(data)
+
+        hass.services.async_register("script", "activate_alexa_actionable_notification_managed", managed_call)
+        hass.states.async_set("binary_sensor.kitchen", "on")
+        hass.states.async_set("binary_sensor.lounge", "on")
+        arguments = {
+            "text": "Presence?",
+            "event_id": "presence_test",
+            "routes": [
+                {
+                    "presence_entity": "binary_sensor.kitchen",
+                    "target": {"alexa_device": "media_player.tv", "screen": True},
+                },
+                {"presence_entity": "binary_sensor.lounge", "target": {"alexa_device": "media_player.audio"}},
+            ],
+            "fallback": {"alexa_device": "media_player.fallback"},
+        }
+        await presence.async_run(arguments, context=Context())
+        assert routed[-1]["targets"] == [{"alexa_device": "media_player.audio"}]
+        hass.states.async_set("binary_sensor.lounge", "unavailable")
+        await presence.async_run(arguments, context=Context())
+        assert routed[-1]["targets"] == [{"alexa_device": "media_player.fallback"}]
+        arguments["audio_only"] = False
+        await presence.async_run(arguments, context=Context())
+        assert routed[-1]["targets"][0]["alexa_device"] == "media_player.tv"
         print("HA script execution, blueprint defaults, confirmation flags and event example OK")
         await hass.async_stop(force=True)
 

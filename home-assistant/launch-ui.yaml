@@ -1,0 +1,39 @@
+alias: Launch Alexa actionable skill
+fields:
+  invocation_name:
+    name: Skill invocation name (Alexa Devices)
+    default: actionable notifications
+    selector:
+      text: {}
+  transport:
+    selector:
+      text: {}
+  device_id:
+    selector:
+      text: {}
+  alexa_device:
+    selector:
+      text: {}
+sequence:
+- variables:
+    launch_method: '{{ transport | default(''alexa_media'') }}'
+- choose:
+  - conditions: '{{ launch_method == ''alexa_devices'' }}'
+    sequence:
+    - action: alexa_devices.send_text_command
+      data:
+        device_id: '{{ device_id }}'
+        text_command: '{{ ''open '' ~ (invocation_name | default(''actionable notifications'')) }}'
+  - conditions: '{{ launch_method == ''alexa_media'' }}'
+    sequence:
+    - action: media_player.play_media
+      target:
+        entity_id: '{{ alexa_device }}'
+      data:
+        media_content_type: skill
+        media_content_id: REPLACE_WITH_YOUR_SKILL_ID
+  default:
+  - stop: Unknown launch method. Choose alexa_media or alexa_devices.
+    error: true
+mode: parallel
+max: 10

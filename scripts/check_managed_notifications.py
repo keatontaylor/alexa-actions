@@ -12,6 +12,7 @@ from homeassistant.core import Context, HomeAssistant, callback
 from homeassistant.helpers import trigger
 from homeassistant.helpers.config_validation import SCRIPT_SCHEMA
 from homeassistant.helpers.script import Script, async_validate_actions_config
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.util import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -36,7 +37,7 @@ async def check():
         response_value = None
         tasks = []
         hass.states.async_set("counter.alexa_actionable_request", "0")
-        for helper in ["alexa_actionable_pending", "alexa_actionable_completed"]:
+        for helper in ["alexa_actionable_pending", "alexa_actionable_completed", "alexa_actionable_group_silence"]:
             hass.states.async_set("input_text." + helper, "")
 
         async def set_value(call):
@@ -79,6 +80,19 @@ async def check():
         hass.services.async_register("counter", "increment", increment)
         hass.services.async_register("media_player", "play_media", launch)
         hass.services.async_register("alexa_devices", "send_text_command", launch)
+        launch_definition = SCRIPT_ENTITY_SCHEMA(yaml.load_yaml(str(ROOT / "home-assistant/launch-ui.yaml")))
+        launch_sequence = await async_validate_actions_config(hass, launch_definition["sequence"])
+        launcher = Script(hass, launch_sequence, "launcher", "script", script_mode="parallel")
+
+        async def turn_on(call):
+            tasks.append(hass.async_create_task(launcher.async_run(dict(call.data["variables"]), context=Context())))
+
+        hass.services.async_register("script", "turn_on", turn_on)
+
+        async def launch_script(call):
+            await launcher.async_run(dict(call.data), context=Context())
+
+        hass.services.async_register("script", "alexa_actionable_launch", launch_script)
         hass.bus.async_listen("alexa_actionable_notification", incoming)
         hass.bus.async_listen("alexa_actionable_notification_timeout", incoming)
 
@@ -155,6 +169,80 @@ async def check():
             await hass.async_block_till_done()
             assert results[-1]["raw_event"]["event_response"] == response_value
             assert type(results[-1]["raw_event"]["event_response"]) is type(response_value)
+        immediate = False
+        targets = [{"alexa_device": "media_player.one"}, {"transport": "alexa_devices", "device_id": "ha-two"}]
+        group_args = {"text": "Group?", "event_id": "group", "targets": targets, "timeout_seconds": 1}
+
+        async def start_group():
+            previous = len(launched)
+            task = asyncio.create_task(managed.async_run(group_args, context=Context()))
+            for _ in range(1000):
+                if len(launched) >= previous + 2:
+                    return task, launched[-1]
+                await asyncio.sleep(0.001)
+            raise AssertionError("Group failed to launch both targets")
+
+        previous_results = len(results)
+        running, question = await start_group()
+        assert question["group"] is True
+        malformed = response(question)
+        malformed.pop("event_response")
+        hass.bus.async_fire("alexa_actionable_notification", malformed)
+        await hass.async_block_till_done(wait_background_tasks=False)
+        assert len(results) == previous_results
+        silent = {**response(question, "ResponseNone"), "event_device_key": "a" * 16}
+        hass.bus.async_fire("alexa_actionable_notification", silent)
+        hass.bus.async_fire("alexa_actionable_notification", silent)
+        await hass.async_block_till_done(wait_background_tasks=False)
+        assert len(results) == previous_results
+        hass.bus.async_fire("alexa_actionable_notification", {**response(question), "event_device_key": "b" * 16})
+        hass.bus.async_fire(
+            "alexa_actionable_notification", {**response(question, "ResponseNo"), "event_device_key": "a" * 16}
+        )
+        await running
+        await hass.async_block_till_done()
+        assert len(results) == previous_results + 1 and results[-1]["event_response_type"] == "ResponseYes"
+
+        running, question = await start_group()
+        for identity in ["a", "b"]:
+            hass.bus.async_fire(
+                "alexa_actionable_notification",
+                {**response(question, "ResponseNone"), "event_device_key": identity * 16},
+            )
+        await running
+        await hass.async_block_till_done()
+        assert len(results) == previous_results + 2 and results[-1]["event_response_type"] == "ResponseNone"
+
+        group_args["timeout_seconds"] = 0.05
+        running, question = await start_group()
+        await running
+        await hass.async_block_till_done()
+        assert len(results) == previous_results + 3 and results[-1]["event_response_type"] == "ResponseNone"
+
+        immediate = True
+        before = len(launched)
+        await managed.async_run(
+            {
+                **group_args,
+                "targets": targets + [targets[0], {"alexa_device": "media_player.tv", "screen": True}],
+                "audio_only": True,
+            },
+            context=Context(),
+        )
+        await hass.async_block_till_done()
+        assert len(launched) == before + 2
+        for invalid in [
+            [{"transport": "invalid", "alexa_device": "media_player.x"}],
+            [{"alexa_device": "media_player.tv", "screen": True}],
+        ]:
+            before = len(launched)
+            helper_before = hass.states.get("input_text.alexa_actionable_notification").state
+            try:
+                await managed.async_run({**group_args, "targets": invalid, "audio_only": True}, context=Context())
+            except HomeAssistantError:
+                pass
+            assert len(launched) == before
+            assert hass.states.get("input_text.alexa_actionable_notification").state == helper_before
         print("HA managed immediate replies, timeout, duplicates, stale sessions and queued overlap OK")
         await hass.async_stop(force=True)
 
