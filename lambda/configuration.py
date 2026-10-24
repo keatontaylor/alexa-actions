@@ -14,6 +14,11 @@ class Settings:
     INCLUDE_DEVICE_ID: bool = False
     DEBUG: bool = False
     ENABLE_COMMANDS: bool = False
+    HTTP_TIMEOUT: float = 3.0
+
+
+# Alexa waits about 8 seconds for a skill response; leave room to reply.
+HTTP_TIMEOUT_RANGE = (1.0, 7.0)
 
 
 def load_settings(defaults, directory, environ=None):
@@ -34,6 +39,17 @@ def load_settings(defaults, directory, environ=None):
         if not isinstance(value, bool):
             raise ValueError(f"{key} must be true or false")
         values[key] = value
+    timeout = values.get("HTTP_TIMEOUT", Settings.HTTP_TIMEOUT)
+    try:
+        if isinstance(timeout, bool):
+            raise ValueError
+        timeout = float(timeout)
+    except (TypeError, ValueError):
+        raise ValueError("HTTP_TIMEOUT must be a number of seconds") from None
+    low, high = HTTP_TIMEOUT_RANGE
+    if not low <= timeout <= high:
+        raise ValueError(f"HTTP_TIMEOUT must be between {low:g} and {high:g} seconds")
+    values["HTTP_TIMEOUT"] = timeout
     for key in ("HOME_ASSISTANT_URL", "TOKEN"):
         if not isinstance(values[key], str):
             raise ValueError(f"{key} must be a string")
