@@ -15,7 +15,7 @@ LOCALES = sorted(path.stem for path in MODELS.glob("*.json"))
 def test_models_and_manifest_match():
     manifest = json.loads((ROOT / "skill-package/skill.json").read_text())
     assert set(LOCALES) == set(manifest["manifest"]["publishingInformation"]["locales"])
-    assert {"en-CA", "en-IN", "es-US"} <= set(LOCALES)
+    assert {"en-AU", "en-CA", "en-IN", "es-US"} <= set(LOCALES)
 
 
 @pytest.mark.parametrize("locale", LOCALES)

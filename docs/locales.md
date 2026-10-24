@@ -1,6 +1,6 @@
 # Interaction models and free-text answers
 
-Import the complete JSON model for the device/test locale, then Save and Build it in the Alexa developer console. Models and manifest entries now include `en-CA`, `en-IN`, and `es-US` as well as the original `en-US`, `en-GB`, `de-DE`, `fr-FR`, `it-IT`, `pt-BR`, and `es-ES`. A new region uses the existing language's model/prompts as a starting point; pronunciation and utterance recognition still need regional tester feedback. Importing only custom intents omits the built-in Yes/No/Fallback routing.
+Import the complete JSON model for the device/test locale, then Save and Build it in the Alexa developer console. Models and manifest entries now include `en-AU`, `en-CA`, `en-IN`, and `es-US` as well as the original `en-US`, `en-GB`, `de-DE`, `fr-FR`, `it-IT`, `pt-BR`, and `es-ES`. A new region uses the existing language's model/prompts as a starting point; pronunciation and utterance recognition still need regional tester feedback. Importing only custom intents omits the built-in Yes/No/Fallback routing.
 
 Each model declares Yes, No, Cancel, Stop, Help and Fallback. Numbers use `AMAZON.NUMBER`, rather than restricting the UK model to four digits. The French prompt override is `fr-FR` (correcting `ft-FR`). Unknown/missing backend locales fall back to English instead of throwing a lookup error. This fallback does not advertise a new locale or create a model for it.
 
