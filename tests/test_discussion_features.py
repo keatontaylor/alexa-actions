@@ -118,3 +118,31 @@ def test_command_models_have_carrier_and_distinct_slot():
         command = next(item for item in intents if item["name"] == "Command")
         assert command["slots"] == [{"name": "CommandText", "type": "AMAZON.SearchQuery"}]
         assert all(sample.replace("{CommandText}", "").strip() for sample in command["samples"])
+
+
+def test_http_timeout_setting_is_parsed_and_bounded(tmp_path):
+    defaults = dict(
+        HOME_ASSISTANT_URL="https://default.invalid",
+        TOKEN="",
+        VERIFY_SSL=True,
+        INCLUDE_DEVICE_ID=False,
+        DEBUG=False,
+        ENABLE_COMMANDS=False,
+        HTTP_TIMEOUT=3.0,
+    )
+    assert load_settings(defaults, tmp_path, {}).HTTP_TIMEOUT == 3.0
+    assert load_settings(defaults, tmp_path, {"HTTP_TIMEOUT": "6"}).HTTP_TIMEOUT == 6.0
+    (tmp_path / "settings.json").write_text(json.dumps({"HTTP_TIMEOUT": 5}))
+    assert load_settings(defaults, tmp_path, {}).HTTP_TIMEOUT == 5.0
+    for bad in ("0.5", "8", "soon", True):
+        with pytest.raises(ValueError, match="HTTP_TIMEOUT"):
+            load_settings(defaults, tmp_path, {"HTTP_TIMEOUT": bad})
+
+
+@pytest.mark.parametrize("seconds", [3.0, 6.0])
+def test_http_pool_uses_the_configured_timeout(monkeypatch, seconds):
+    monkeypatch.setattr(skill, "HTTP_TIMEOUT", seconds)
+    timeout = skill._init_http_pool().connection_pool_kw["timeout"]
+    assert timeout.total == seconds
+    assert timeout.connect_timeout == pytest.approx(seconds / 3)
+    assert timeout.read_timeout == pytest.approx(seconds * 2 / 3)

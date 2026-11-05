@@ -6,6 +6,7 @@ VERIFY_SSL = True  # SET TO FALSE IF YOU DO NOT HAVE VALID CERTS
 TOKEN = ""  # ADD YOUR LONG LIVED TOKEN IF NEEDED OTHERWISE LEAVE BLANK
 INCLUDE_DEVICE_ID = False  # OPTIONAL: ADD AMAZON DEVICE ID TO RESPONSE EVENTS
 DEBUG = False  # SET TO TRUE IF YOU WANT TO SEE MORE DETAILS IN THE LOGS
+HTTP_TIMEOUT = 3.0  # SECONDS PER HOME ASSISTANT CALL (1-7); RAISE IF YOUR HA IS FAR FROM THE SKILL REGION
 
 
 """Keep deployed constants above; optional file and environment settings override them."""
@@ -48,7 +49,7 @@ def _init_http_pool():
     # A failed HA connection must fit within Alexa's request-response deadline.
     return urllib3.PoolManager(
         cert_reqs="CERT_REQUIRED" if VERIFY_SSL else "CERT_NONE",
-        timeout=urllib3.Timeout(total=3.0, connect=1.0, read=2.0),
+        timeout=urllib3.Timeout(total=HTTP_TIMEOUT, connect=HTTP_TIMEOUT / 3, read=HTTP_TIMEOUT * 2 / 3),
         retries=False,
     )
 

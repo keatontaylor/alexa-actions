@@ -3,5 +3,6 @@
   "VERIFY_SSL": true,
   "INCLUDE_DEVICE_ID": false,
   "ENABLE_COMMANDS": false,
-  "DEBUG": false
+  "DEBUG": false,
+  "HTTP_TIMEOUT": 3.0
 }
